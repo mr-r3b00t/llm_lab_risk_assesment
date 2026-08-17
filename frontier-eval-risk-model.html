@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Risk Model: Frontier Model Evaluation Environment</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Orbitron:wght@500;700;900&family=Fraunces:opsz,wght@9..144,400;9..144,600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#08090c;--panel:#0e1014;--panel2:#141821;--line:#242c3a;
+  --grn:#38ff9c;--grn-dim:#1d8f58;--amb:#ffb000;--red:#ff4d5e;--org:#ff8a3d;
+  --txt:#c6ccd8;--mut:#78849a;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--txt);
+  font-family:'JetBrains Mono',ui-monospace,Consolas,monospace;font-size:14px;line-height:1.6;
+  background-image:linear-gradient(rgba(255,176,0,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,176,0,.02) 1px,transparent 1px);
+  background-size:38px 38px;}
+.wrap{max-width:1240px;margin:0 auto;padding:28px 20px 90px}
+header.top{border:1px solid var(--line);border-top:3px solid var(--amb);background:linear-gradient(180deg,#12151d,#0a0c10);padding:26px 24px;position:relative;overflow:hidden}
+header.top:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(255,176,0,.03) 0 1px,transparent 1px 3px);pointer-events:none}
+.eyebrow{font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--amb)}
+h1{font-family:'Orbitron',sans-serif;font-weight:900;font-size:clamp(20px,3.3vw,33px);letter-spacing:.02em;color:#fff;margin:10px 0 6px;text-shadow:0 0 22px rgba(255,176,0,.22)}
+.sub{font-family:'Fraunces',serif;font-size:16px;max-width:74ch}
+.docctl{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);margin-top:22px}
+.docctl div{background:var(--panel);padding:9px 12px;font-size:11.5px}
+.docctl span{display:block;color:var(--mut);font-size:10px;letter-spacing:.16em;text-transform:uppercase}
+h2{font-family:'Orbitron',sans-serif;font-size:16px;letter-spacing:.12em;text-transform:uppercase;color:var(--amb);margin:48px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+h2 .n{color:#4a5568;margin-right:12px;font-weight:500}
+h3{font-family:'Orbitron',sans-serif;font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--grn);margin:26px 0 8px}
+p{max-width:102ch}
+.panel{border:1px solid var(--line);background:var(--panel);padding:16px 18px;margin:14px 0}
+.panel.amber{border-left:3px solid var(--amb)}
+.panel.red{border-left:3px solid var(--red)}
+.panel.grn{border-left:3px solid var(--grn)}
+.thesis{font-family:'Fraunces',serif;font-size:17px;line-height:1.72;color:#e8edf5}
+table{width:100%;border-collapse:collapse;margin:12px 0 26px;font-size:12px}
+th{background:var(--panel2);color:var(--amb);text-align:left;font-weight:700;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;padding:8px 9px;border:1px solid var(--line);vertical-align:bottom}
+td{border:1px solid var(--line);padding:8px 9px;vertical-align:top;background:var(--panel)}
+tr:nth-child(even) td{background:#0b0d11}
+td.id{font-weight:700;color:var(--amb);white-space:nowrap}
+.iso{color:var(--grn-dim);font-size:11px}
+.sc{text-align:center;font-weight:700;white-space:nowrap}
+.b-low{color:#7ddc9e}.b-mod{color:#c8d97a}.b-high{color:var(--amb)}.b-sev{color:var(--org)}.b-crit{color:var(--red)}
+.chip{display:inline-block;border:1px solid var(--line);padding:1px 7px;font-size:10.5px;letter-spacing:.08em;color:var(--mut);margin:2px 4px 2px 0}
+.chip.g{border-color:var(--grn-dim);color:var(--grn)}
+.chip.a{border-color:#5a4310;color:var(--amb)}
+.chip.r{border-color:#5a1a22;color:var(--red)}
+ul{padding-left:18px;max-width:102ch}li{margin:5px 0}
+.matrix{border-collapse:collapse;width:auto;font-size:11px}
+.matrix td,.matrix th{width:62px;text-align:center;padding:7px 4px}
+.m1{background:#0f2118!important;color:#7ddc9e}
+.m2{background:#1b2412!important;color:#c8d97a}
+.m3{background:#2a2410!important;color:var(--amb)}
+.m4{background:#33190c!important;color:var(--org)}
+.m5{background:#33101a!important;color:var(--red)}
+.toc{columns:2;column-gap:34px;font-size:12.5px}
+.toc a{display:block;text-decoration:none;color:var(--txt);padding:3px 0;border-bottom:1px dotted #1a1f29}
+.toc a:hover{color:var(--amb)}
+.toc a b{color:#4a5568;margin-right:9px}
+footer{margin-top:60px;border-top:1px solid var(--line);padding-top:16px;color:var(--mut);font-size:11px}
+.scroller{overflow-x:auto;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.scroller table{margin:0}
+@media(max-width:820px){.toc{columns:1}body{font-size:13px}}
+@media print{body{background:#fff;color:#000}td,th{background:#fff!important;color:#000!important;border-color:#999}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div class="eyebrow">Information Security Risk Assessment // Restricted</div>
+  <h1>Frontier Model Evaluation Environment</h1>
+  <div class="sub">Lifecycle risk model for a laboratory conducting dangerous capability evaluation, red-teaming and safety assessment of frontier AI models under structured access. Controls mapped to ISO/IEC 27001:2022 Annex A and ISO/IEC 27002:2022, with ISO/IEC 42001 as the primary management-system overlay.</div>
+  <div class="docctl">
+    <div><span>Classification</span>Restricted / Need to know</div>
+    <div><span>Primary framework</span>ISO/IEC 27001:2022 + 42001</div>
+    <div><span>Weight security target</span>State-resistant tier</div>
+    <div><span>Scenarios</span>69 across 11 lifecycle phases</div>
+    <div><span>Residual Low-band count</span>0</div>
+    <div><span>Review cadence</span>Per engagement + quarterly</div>
+  </div>
+</header>
+
+<h2><span class="n">00</span>Contents</h2>
+<nav class="toc">
+  <a href="#inversion"><b>01</b>What changes at the frontier</a>
+  <a href="#scope"><b>02</b>Scope and asset tiers</a>
+  <a href="#threat"><b>03</b>Threat actor model</a>
+  <a href="#appetite"><b>04</b>Risk appetite</a>
+  <a href="#method"><b>05</b>Scoring method</a>
+  <a href="#man"><b>06</b>P1 Mandate and independence</a>
+  <a href="#acc"><b>07</b>P2 Structured access and weight custody</a>
+  <a href="#con"><b>08</b>P3 Containment environment</a>
+  <a href="#evl"><b>09</b>P4 Evaluation design and elicitation</a>
+  <a href="#exe"><b>10</b>P5 Execution</a>
+  <a href="#aut"><b>11</b>P6 Autonomy and replication evals</a>
+  <a href="#haz"><b>12</b>P7 Hazardous artefact handling</a>
+  <a href="#int"><b>13</b>P8 Assessment integrity</a>
+  <a href="#dis"><b>14</b>P9 Disclosure and downstream reliance</a>
+  <a href="#ppl"><b>15</b>P10 Personnel and insider risk</a>
+  <a href="#trm"><b>16</b>P11 Termination and destruction</a>
+  <a href="#controls"><b>17</b>Control statements</a>
+  <a href="#residual"><b>18</b>Residual risk view</a>
+  <a href="#irreducible"><b>19</b>Irreducible risk</a>
+  <a href="#frameworks"><b>20</b>Framework alignment and gaps</a>
+</nav>
+
+<h2 id="inversion"><span class="n">01</span>What changes at the frontier</h2>
+<div class="panel red">
+<p class="thesis">In a research lab, the model is a tool that might have been tampered with. In frontier evaluation, the model is the subject of an adversarial assessment, its weights are a national-security-grade asset, and the dominant risk is not a breach that harms the operator but a false negative that harms everyone downstream. Three things invert, and every control decision follows from them.</p>
+</div>
+
+<div class="scroller"><table>
+<tr><th style="width:22%">Dimension</th><th style="width:38%">Research laboratory</th><th>Frontier evaluation</th></tr>
+<tr><td><strong>Crown jewel</strong></td><td>The infrastructure. Models are commodity open weights, replaceable from a hub.</td><td>The weights themselves, then the evaluation transcripts. Both are irreplaceable and both carry proliferation consequence. Infrastructure is the least valuable thing in the room.</td></tr>
+<tr><td><strong>Threat actor tier</strong></td><td>Opportunistic scanning, commodity malware, occasional targeted interest.</td><td>State intelligence services with dedicated collection priorities sit in the <em>baseline</em> threat model, not the tail. Insider recruitment is an expected attack path, not a hypothetical.</td></tr>
+<tr><td><strong>Direction of harm</strong></td><td>Inward. Compromise damages the operator, their clients, their reputation.</td><td>Outward. The highest-consequence failure is an incorrect assurance verdict on which a deployment decision rests. The lab can execute every security control perfectly and still cause the worst outcome in the model.</td></tr>
+<tr><td><strong>The model's role</strong></td><td>Passive artefact. May be backdoored by a third party.</td><td>Potentially adversarial participant. Sandbagging, evaluation awareness, containment probing and operator manipulation are in scope as assessed capabilities, which means they are also live threats to the assessment itself.</td></tr>
+<tr><td><strong>Guardrails</strong></td><td>Removed by operator choice, for research convenience.</td><td>Often removed by the developer, deliberately, as a condition of meaningful evaluation. A helpful-only variant is a higher-hazard artefact than anything that will ever ship, and must be handled above production controls, not below them.</td></tr>
+<tr><td><strong>Assurance burden</strong></td><td>Findings inform the operator's own work.</td><td>Findings may be relied upon by the developer, a government body and the public. Chain of custody, reproducibility and stated confidence bounds carry the weight of forensic evidence.</td></tr>
+</table></div>
+
+<div class="panel amber"><strong>Consequence for the control set.</strong> Containment stops being a hygiene measure and becomes safety-critical. Personnel security stops being a checkbox and becomes a counter-intelligence function. And a whole class of risk appears that has no security control at all, because it is about the epistemics of the assessment rather than the integrity of the system.</div>
+
+<h2 id="scope"><span class="n">02</span>Scope and asset tiers</h2>
+<h3>In scope</h3>
+<ul>
+<li>Structured access to frontier models: weight access into a controlled enclave, or gated API access with fine-tuning and helpful-only variants.</li>
+<li>Dangerous capability evaluation across cyber offence, CBRN uplift, autonomy and self-replication, persuasion and manipulation, and situational awareness.</li>
+<li>Adversarial red-teaming, capability elicitation, scaffolding development and automated agentic evaluation harnesses.</li>
+<li>Production, custody and disclosure of evaluation evidence relied upon by third parties.</li>
+<li>The full engagement lifecycle from mandate through weight return and destruction.</li>
+</ul>
+
+<h3>Asset tiers</h3>
+<div class="scroller"><table>
+<tr><th style="width:70px">Tier</th><th style="width:30%">Asset</th><th>Handling position</th></tr>
+<tr><td class="id b-crit">T0</td><td>Frontier model weights, including helpful-only and safety-mitigations-removed variants</td><td>Highest control tier available to the organisation. Never in plaintext outside the enclave. Dual control and split knowledge on custody operations. Access on a named, time-bounded, individually approved basis with two-person rule.</td></tr>
+<tr><td class="id b-sev">T1</td><td>Successful elicitation transcripts, working attack chains, functional uplift material, jailbreak techniques effective against deployed models</td><td>Treated as a proliferation hazard in its own right. Segregated store, encrypted, need-to-know, minimum viable retention, no general-purpose systems. This is the second-most-attractive target after T0 and is routinely under-classified.</td></tr>
+<tr><td class="id b-high">T2</td><td>Elicitation scaffolds, agent harnesses, evaluation methodology, live benchmark items</td><td>Scaffolds can themselves confer capability. Live benchmark items are contamination-sensitive and are never published. Held under version control inside the boundary.</td></tr>
+<tr><td class="id b-mod">T3</td><td>Results, scores, draft findings, pre-publication reports</td><td>Integrity-critical. Signed and hash-chained. Segregation of duties between execution and reporting. Embargo controlled.</td></tr>
+<tr><td class="id b-low">T4</td><td>Enclave configuration, containment design, network policy</td><td>Confidentiality matters because it describes the boundary an attacker or the model would need to defeat.</td></tr>
+</table></div>
+
+<h2 id="threat"><span class="n">03</span>Threat actor model</h2>
+<div class="scroller"><table>
+<tr><th style="width:24%">Actor</th><th style="width:16%">Objective</th><th style="width:14%">Capability</th><th>Primary vector against this lab</th></tr>
+<tr><td><strong>State intelligence service</strong></td><td>Weight acquisition, capability intelligence</td><td class="sc b-crit">Very high</td><td>Insider recruitment or coercion, supply chain into the enclave, zero-day against the compute provider, physical and technical collection against staff.</td></tr>
+<tr><td><strong>State-adjacent or proliferation actor</strong></td><td>T1 uplift material</td><td class="sc b-sev">High</td><td>Targeting the transcript store rather than the weights, which is cheaper and often less well defended for equivalent value.</td></tr>
+<tr><td><strong>Malicious insider</strong></td><td>Ideology, coercion, financial</td><td class="sc b-crit">Very high</td><td>Legitimate access to T0 and T1, knowledge of containment design, ability to stage exfiltration over time within normal duties.</td></tr>
+<tr><td><strong>Negligent insider</strong></td><td>Convenience</td><td class="sc b-high">Moderate</td><td>Relaxing containment to unblock work, moving artefacts to general-purpose systems, retaining material past destruction.</td></tr>
+<tr><td><strong>The model under evaluation</strong></td><td>Contested; treat capability as the assessed variable</td><td class="sc b-sev">Unknown</td><td>Containment probing, operator manipulation, evaluation-context detection and sandbagging, persistence in eval infrastructure, corruption of its own assessment record.</td></tr>
+<tr><td><strong>Commercially motivated party</strong></td><td>Suppression or shaping of adverse findings</td><td class="sc b-mod">Moderate</td><td>Contractual leverage, funding dependency, pre-publication review rights, selective renewal of engagements.</td></tr>
+<tr><td><strong>Ideological or hacktivist</strong></td><td>Disclosure, disruption</td><td class="sc b-mod">Low to moderate</td><td>Leak of unmitigated findings, doxxing of evaluators, disruption of the assessment programme.</td></tr>
+</table></div>
+<div class="panel amber"><strong>On the model as an actor.</strong> Listing the model under evaluation as a threat actor is not a claim about intent or agency. It is a design position: the lab is assessing whether the system can do these things, so the assessment must be built on the assumption that it might. Treating the assessed capability as absent while you are still measuring it is circular.</div>
+
+<h2 id="appetite"><span class="n">04</span>Risk appetite</h2>
+<div class="scroller"><table>
+<tr><th style="width:34%">Category</th><th style="width:14%">Appetite</th><th>Position</th></tr>
+<tr><td>Aggressive capability elicitation inside containment</td><td class="sc b-low">HIGH</td><td>Actively required. Under-elicitation is the failure mode, not over-elicitation. Evaluators are expected to push to the limit of the agreed protocol.</td></tr>
+<tr><td>Cost, schedule and operational friction</td><td class="sc b-mod">HIGH</td><td>Containment and custody controls take precedence over throughput. Schedule pressure is not a basis for relaxing either.</td></tr>
+<tr><td>T0 weight confidentiality</td><td class="sc b-crit">NONE</td><td>Zero tolerance. Any suspected exposure is a reportable event to the developer and relevant authority regardless of confirmation status.</td></tr>
+<tr><td>Containment integrity</td><td class="sc b-crit">NONE</td><td>Zero tolerance. Any egress from the evaluation boundary halts the engagement pending investigation.</td></tr>
+<tr><td>T1 hazardous artefact confidentiality</td><td class="sc b-crit">NONE</td><td>Zero tolerance. Uplift material leaving the boundary is treated with the same severity as weight loss.</td></tr>
+<tr><td>Assessment integrity and independence</td><td class="sc b-crit">NONE</td><td>Zero tolerance. No external party holds approval rights over findings. Commercial relationships may not influence conclusions.</td></tr>
+<tr><td>Understatement of capability (false negative)</td><td class="sc b-crit">NONE</td><td>Zero tolerance in principle, unachievable in practice. Managed by protocol, lower-bound framing and explicit limitation statements rather than eliminated. See section 19.</td></tr>
+<tr><td>Overstatement of capability (false positive)</td><td class="sc b-mod">LOW</td><td>Preferred error direction, but not free. Repeated overstatement destroys the credibility on which the assurance function depends.</td></tr>
+<tr><td>Availability of the evaluation environment</td><td class="sc b-mod">MODERATE</td><td>Delay is acceptable. Rushing to recover an environment is a common route to a containment shortcut.</td></tr>
+</table></div>
+
+<h2 id="method"><span class="n">05</span>Scoring method</h2>
+<p>5&times;5 qualitative. Inherent assumes the scenario without evaluation-specific controls. Residual assumes mapped controls implemented and effective. Bands: 1&ndash;4 Low, 5&ndash;9 Moderate, 10&ndash;14 High, 15&ndash;19 Severe, 20&ndash;25 Critical.</p>
+<div style="display:flex;gap:34px;flex-wrap:wrap;align-items:flex-start">
+<div>
+<h3>Impact scale (frontier-calibrated)</h3>
+<table style="font-size:11.5px;max-width:520px">
+<tr><th>I</th><th>Descriptor</th><th>Guide</th></tr>
+<tr><td class="sc">1</td><td>Negligible</td><td>Local delay, no assessment effect</td></tr>
+<tr><td class="sc">2</td><td>Minor</td><td>Rework, schedule slip</td></tr>
+<tr><td class="sc">3</td><td>Moderate</td><td>Partial re-run, internal finding, minor credibility cost</td></tr>
+<tr><td class="sc">4</td><td>Major</td><td>Engagement halted, developer and regulator notification, published finding withdrawn</td></tr>
+<tr><td class="sc">5</td><td>Severe</td><td>Weight or uplift material loss, containment breach, an unsafe model cleared for deployment, criminal or national-security consequence</td></tr>
+</table>
+</div>
+<div>
+<h3>Heat bands</h3>
+<table class="matrix">
+<tr><th>L\I</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th></tr>
+<tr><th>5</th><td class="m2">5</td><td class="m3">10</td><td class="m4">15</td><td class="m5">20</td><td class="m5">25</td></tr>
+<tr><th>4</th><td class="m1">4</td><td class="m2">8</td><td class="m3">12</td><td class="m4">16</td><td class="m5">20</td></tr>
+<tr><th>3</th><td class="m1">3</td><td class="m2">6</td><td class="m3">9</td><td class="m3">12</td><td class="m4">15</td></tr>
+<tr><th>2</th><td class="m1">2</td><td class="m1">4</td><td class="m2">6</td><td class="m2">8</td><td class="m3">10</td></tr>
+<tr><th>1</th><td class="m1">1</td><td class="m1">2</td><td class="m1">3</td><td class="m2">4</td><td class="m2">5</td></tr>
+</table>
+<p style="font-size:11px;color:var(--mut);max-width:36ch">Note the practical consequence of the impact scale: most scenarios here carry I=4 or I=5 structurally, so likelihood reduction is the only lever available and no residual reaches the Low band.</p>
+</div>
+</div>
+
+<!-- P1 -->
+<h2 id="man"><span class="n">06</span>Phase 1 &mdash; Mandate, independence and authorisation</h2>
+<div class="scroller"><table>
+<tr><th style="width:74px">ID</th><th style="width:25%">Risk scenario</th><th style="width:40px">L</th><th style="width:40px">I</th><th style="width:50px">Inh</th><th>Countermeasures and control statements</th><th style="width:15%">ISO 27002</th><th style="width:50px">Res</th></tr>
+
+<tr><td class="id">MAN-01</td><td>Evaluator independence compromised by the commercial relationship with the model developer. Findings are softened, scope is narrowed by negotiation, or renewal incentives shape conclusions.</td><td class="sc">4</td><td class="sc">5</td><td class="sc b-crit">20</td><td>Contractual right to publish without developer approval, with review rights limited to factual accuracy and a fixed embargo window. Commercial negotiation function segregated from the assessment function, with no reporting line between them. Conflict of interest register maintained per engagement and per individual. Revenue concentration monitored as an independence risk indicator. Findings signed off by a review body with no commercial exposure to the developer.</td><td class="iso">5.2, 5.3, 5.19&ndash;5.22, 5.35, 6.2</td><td class="sc b-high">10</td></tr>
+
+<tr><td class="id">MAN-02</td><td>Assessment scope not defined against a specific capability threshold or decision. Results are produced but cannot support the deployment decision they are cited for.</td><td class="sc">4</td><td class="sc">4</td><td class="sc b-sev">16</td><td>Each engagement opens with a written statement of the threshold being tested, the threat model behind it, the decision the result will inform, and the evidence standard required. Scope changes are recorded and re-approved. Out-of-scope conclusions are explicitly excluded in the report.</td><td class="iso">5.1, 5.8, 5.37, 8.29</td><td class="sc b-mod">8</td></tr>
+
+<tr><td class="id">MAN-03</td><td>No named accountability for an assurance verdict. When a cleared model later demonstrates the capability in deployment, no one owns the judgement.</td><td class="sc">3</td><td class="sc">5</td><td class="sc b-sev">15</td><td>Named accountable individual signs each verdict, against a documented evidence base and stated confidence bounds. Verdicts carry an expiry and a re-assessment trigger. Post-hoc review is mandatory following any deployment incident touching an assessed capability.</td><td class="iso">5.2, 5.31, 5.35, 5.36</td><td class="sc b-high">10</td></tr>
+
+<tr><td class="id">MAN-04</td><td>Deliberate generation of dangerous capability evidence proceeds without prior legal authorisation, indemnity or government liaison. The lab produces material it is not lawfully positioned to hold.</td><td class="sc">3</td><td class="sc">5</td><td class="sc b-sev">15</td><td>Legal position established before any high-hazard domain evaluation, covering possession, generation and transfer of the resulting material. Standing liaison with the relevant national authority, established before it is needed rather than during an incident. Indemnity position confirmed in writing. Domains where the position cannot be established are excluded from scope.</td><td class="iso">5.5, 5.6, 5.31, 5.19, 6.2</td><td class="sc b-high">10</td></tr>
+
+<tr><td class="id">MAN-05</td><td>Evaluations involving human participants (persuasion, manipulation, social engineering studies) proceed without ethical oversight or informed consent.</td><td class="sc">3</td><td class="sc">4</td><td class="sc b-high">12</td><td>Independent ethics review required for any protocol involving human subjects, including staff acting as subjects. Informed consent, withdrawal rights, debrief and data protection assessment documented per study. Deception protocols reviewed separately.</td><td class="iso">5.31, 5.34, 5.35, 6.3</td><td class="sc b-mod">8</td></tr>
+
+<tr><td class="id">MAN-06</td><td>The evaluator also sells mitigations, tooling or advisory services to the same developer, creating an incentive to find problems it can then be paid to solve.</td><td class="sc">3</td><td class="sc">4</td><td class="sc b-high">12</td><td>Structural separation between assessment and remediation lines of business, or contractual prohibition on remediation engagement with an assessed developer within a defined period. Disclosed in the report where any relationship exists.</td><td class="iso">5.3, 5.35, 6.2, 5.19</td><td class="sc b-mod">8</td></tr>
+</table></div>
+
+<!-- P2 -->
+<h2 id="acc"><span class="n">07</span>Phase 2 &mdash; Structured access and weight custody</h2>
+<div class="scroller"><table>
+<tr><th style="width:74px">ID</th><th style="width:25%">Risk scenario</th><th style="width:40px">L</th><th style="width:40px">I</th><th style="width:50px">Inh</th><th>Countermeasures and control statements</th><th style="width:15%">ISO 27002</th><th style="width:50px">Res</th></tr>
+
+<tr><td class="id">ACC-01</td><td>Frontier weights exfiltrated by a resourced state actor. This is the single highest-consequence scenario in the model and the one where control effectiveness is most uncertain.</td><td class="sc">4</td><td class="sc">5</td><td class="sc b-crit">20</td><td>Weights resident only inside a dedicated enclave with hardware-attested compute and confidential computing where available. Never present in plaintext at rest outside that enclave. Key custody in hardware security modules under split knowledge and dual control. No general-purpose egress from the enclave; outbound bandwidth constrained and fully logged. Access individually approved, time-bounded and subject to a two-person rule. Continuous integrity attestation of the enclave. Independent adversarial testing of the custody design, not just of its components.</td><td class="iso">5.12, 8.2, 8.3, 8.5, 8.20, 8.22, 8.24, 8.27, 5.23</td><td class="sc b-sev">15</td></tr>
+
+<tr><td class="id">ACC-02</td><td>An insider with legitimate access copies weights or key material, whether through recruitment, coercion, ideological motivation or financial pressure.</td><td class="sc">3</td><td class="sc">5</td><td class="sc b-sev">15</td><td>Enhanced vetting proportionate to the asset tier, with periodic re-vetting rather than one-time screening. Two-person rule on all weight-touching operations. Segregation of duties so no individual holds both custody and export capability. Behavioural analytics on access to T0 assets. Data loss prevention on all egress paths from the enclave. Confidentiality obligations that survive employment, with a documented disciplinary process.</td><td class="iso">6.1, 6.2, 6.4, 6.6, 5.3, 8.2, 8.12, 8.16</td><td class="sc b-high">10</td></tr>
+
+<tr><td class="id">ACC-03</td><td>The developer silently changes the model, its system prompt, or an upstream safety filter mid-evaluation. Results are invalid but appear internally consistent.</td><td class="sc">4</td><td class="sc">4</td><td class="sc b-sev">16</td><td>Version pinning with a cryptographic digest or attestation recorded at session start and verified at session end. Contractual obligation on the developer to notify any change affecting the evaluated surface. Continuous canary probes with known-response characteristics detect silent substitution. Results annotated with the verified model identity, not the claimed one.</td><td class="iso">5.20, 5.22, 8.9, 8.29, 8.32</td><td class="sc b-mod">8</td></tr>
+
+<tr><td class="id">ACC-04</td><td>Credentials granting structured access to the developer's environment are compromised, giving an attacker evaluation-grade access to a frontier model including any unmitigated variant.</td><td class="sc">3</td><td class="sc">5</td><td class="sc b-sev">15</td><td>Phishing-resistant multi-factor authentication mandatory. Credentials issued to named individuals, short-lived, never shared, never present outside the enclave. Hardware-bound where the developer supports it. Anomalous usage alerting agreed jointly with the developer. Immediate revocation procedure tested rather than assumed.</td><td class="iso">5.17, 8.2, 8.5, 8.24, 8.16</td><td class="sc b-high">10</td></tr>
+
+<tr><td class="id">ACC-05</td><td>A helpful-only or safety-mitigations-removed variant, provided precisely so that capability can be measured without refusal interference, is handled at the same tier as the production model. It is in fact the most hazardous artefact the lab will ever hold.</td><td class="sc">3</td><td class="sc">5</td><td class="sc b-sev">15</td><td>Unmitigated variants classified above production weights and handled under the strictest tier without exception. Access list narrower than for the production model. Session recording mandatory. Existence of the variant itself treated as restricted information. Destruction at engagement close is non-negotiable and evidenced.</td><td class="iso">5.12, 5.13, 5.14, 8.3, 8.10, 8.15</td><td class="sc b-high">10</td></tr>
+
+<tr><td class="id">ACC-06</td><td>Weights or derived artefacts are retained past the agreed period, or copies exist that were never registered as being in custody.</td><td class="sc">3</td><td class="sc">5</td><td class="sc b-sev">15</td><td>Custody register records every copy at creation, with location, purpose and destruction date. Reconciliation against storage inventory at least monthly and at engagement close. Destruction is cryptographic and evidenced with a certificate provided to the developer. Unregistered copies are treated as an incident.</td><td class="iso">5.9, 5.33, 8.10, 8.13, 5.20</td><td class="sc b-high">10</td></tr>
+
+<tr><td class="id">ACC-07</td><td>The evaluator's own supply chain is used as the route into the enclave: a dependency, a build pipeline, a managed service, a hardware vendor.</td><td class="sc">3</td><td class="sc">5</td><td class="sc b-sev">15</td><td>Enclave software bill of materials maintained and minimal by design. Build pipeline for enclave images isolated from general corporate development, with reproducible builds and signed artefacts. Supplier security requirements imposed contractually and verified, not attested. No unreviewed third-party code executes inside the enclave. Development and evaluation environments strictly separated.</td><td class="iso">5.19&ndash;5.22, 8.8, 8.9, 8.25, 8.30, 8.31</td><td class="sc b-high">10</td></tr>
+
+<tr><td class="id">ACC-08</td><td>Compromise at the cloud or hardware layer beneath the enclave, or absence of attestation such that a compromise would be undetectable.</td><td class="sc">2</td><td class="sc">5</td><td class="sc b-high">10</td><td>Confidential computing with remote attestation where the platform supports it, so the enclave's integrity can be verified rather than trusted. Provider security posture assessed against the asset tier before selection. Encryption with keys held outside the provider's control. Assumption of provider compromise built into the containment design.</td><td class="iso">5.21, 5.23, 8.24, 8.27, 8.16</td><td class="sc b-high">10</td></tr>
+</table></div>
+
+<!-- P3 -->
+<h2 id="con"><span class="n">08</span>Phase 3 &mdash; Containment environment</h2>
+<div class="panel red"><strong>Safety-critical.</strong> Containment here is not a security hygiene measure protecting the operator. It is the mechanism preventing a system whose capabilities are by definition unknown from acting outside the boundary in which those capabilities are being measured. It is assessed, tested and reported on as a safety control, and its failure halts the engagement.</div>
+<div class="scroller"><table>
+<tr><th style="width:74px">ID</th><th style="width:25%">Risk scenario</th><th style="width:40px">L</th><th style="width:40px">I</th><th style="width:50px">Inh</th><th>Countermeasures and control statements</th><th style="width:15%">ISO 27002</th><th style="width:50px">Res</th></tr>
+
+<tr><td class="id">CON-01</td><td>The evaluation environment has general internet egress, granted for convenience during agentic testing and never revoked.</td><td class="sc">4</td><td class="sc">5</td><td class="sc b-crit">20</td><td>No default route from evaluation workloads. Agentic evaluations run against a simulated internet with mock services, sinkholed DNS and synthetic endpoints rather than live infrastructure. Any real external dependency requires individual approval, an expiry and a recorded justification. Egress policy verified by automated assertion tests at the start of every session, not inherited from the last known-good state.</td><td class="iso">8.20, 8.21, 8.22, 8.23, 8.16</td><td class="sc b-high">10</td></tr>
+
+<tr><td class="id">CON-02</td><td>A model-controlled process escapes its sandbox onto the evaluation host, through the container runtime, the accelerator driver stack or a shared kernel surface.</td><td class="sc">2</td><td class="sc">5</td><td class="sc b-high">10</td><td>Nested isolation: hardware-virtualised sandbox inside an isolated host inside an isolated segment. Unprivileged execution, restricted syscall surface, no host mounts, no shared kernel where a microVM boundary is available. Host holds no credentials and has no route beyond the segment, so an escape yields an isolated host rather than a foothold. Driver and runtime patching on a defined cycle.</td><td class="iso">8.8, 8.22, 8.27, 8.31, 8.2</td><td class="sc b-high">10</td></tr>
+
+<tr><td class="id">CON-03</td><td>Containment depends on a single enforcing layer, and no one has independently verified that it actually holds. The design is documented, tested at build, and thereafter assumed.</td><td class="sc">4</td><td class="sc">5</td><td class="sc b-crit">20</td><td>Defence in depth with independent enforcement at network, host, runtime and identity layers, such that no single control failure produces egress. Containment is red-teamed as a target in its own right by a team separate from the evaluators. Continuous assertion testing attempts egress on a schedule and alerts on success. Containment test results are reported alongside evaluation findings, because a finding is only as good as the boundary it was produced inside.</td><td class="iso">8.16, 8.20, 8.22, 8.29, 5.35</td><td class="sc b-high">10</td></tr>
+
+<tr><td class="id">CON-04</td><td>The evaluation environment is connected to corporate identity, file sharing or collaboration systems so that evaluators can work efficiently.</td><td class="sc">3</td><td class="sc">5</td><td class="sc b-sev">15</td><td>No shared identity provider, directory, file share or collaboration tooling between the enclave and corporate IT. Data movement out of the enclave occurs only through a reviewed, logged, one-way transfer process with content inspection. Management access is initiated from the corporate side into the enclave, never the reverse.</td><td class="iso">8.20, 8.22, 8.31, 5.15, 8.3</td><td class="sc b-high">10</td></tr>
+
+<tr><td class="id">CON-05</td><td>Real credentials, tokens, payment instruments or cloud API keys are present in the evaluation environment and usable by the model to acquire external resources.</td><td class="sc">3</td><td class="sc">5</td><td class="sc b-sev">15</td><td>No real credentials in the evaluation environment. Autonomy evaluations use canary credentials against mock services, which additionally provides high-fidelity detection if used. No payment instrument, no cloud account with provisioning rights, no identity capable of acquiring compute. Where a real credential is unavoidable, it is scoped to a single dedicated account with hard spend and provisioning caps.</td><td class="iso">5.17, 8.2, 8.18, 8.16, 8.6</td><td class="sc b-mod">8</td></tr>
+
+<tr><td class="id">CON-06</td><td>No tested means to halt a long-running autonomous evaluation, or the halt mechanism depends on the same infrastructure being evaluated.</td><td class="sc">3</td><td class="sc">4</td><td class="sc b-high">12</td><td>Termination available at four independent layers: process, container runtime, network isolation of the segment, and physical power. The halt path does not traverse the evaluated system. Procedure documented and exercised at least quarterly, with exercise evidence retained. Any autonomous run carries an automatic expiry.</td><td class="iso">5.29, 5.30, 8.16, 5.37</td><td class="sc b-mod">8</td></tr>
+
+<tr><td class="id">CON-07</td><td>Model-written artefacts persist between evaluation runs, contaminating subsequent evaluations or providing a persistence surface.</td><td class="sc">3</td><td class="sc">4</td><td class="sc b-high">12</td><td>Environment rebuilt from a signed image for every run; no state survives by default. Post-run filesystem and image diffing against the known baseline, with any delta investigated before the next run. Artefact inventory reconciled per session.</td><td class="iso">8.9, 8.10, 8.31, 8.32, 8.16</td><td class="sc b-mod">6</td></tr>
+
+<tr><td class="id">CON-08</td><td>Physical or logical access to the enclave by staff, contractors or facilities personnel outside the vetted access list.</td><td class="sc">2</td><td class="sc">5</td><td class="sc b-high">10</td><td>Enclave hosted in a facility with access control proportionate to the asset tier, an audited access list, and escorted access for any unvetted personnel. Where the enclave is on managed cloud, equivalent assurance obtained contractually and verified. Physical and logical access lists reconciled monthly.</td><td class="iso">7.1&ndash;7.4, 7.6, 6.1, 8.2, 5.20</td><td class="sc b-mod">5</td></tr>
+
+<tr><td class="id">CON-09</td><td>Evaluation-scale compute means that if any egress path exists, exfiltration of weight-scale data is bandwidth-feasible rather than theoretical.</td><td class="sc">2</td><td class="sc">5</td><td class="sc b-high">10</td><td>Outbound bandwidth from the enclave hard-capped well below the volume required to move a weight file in an operationally useful window. Volumetric and entropy alerting on all egress. Permitted transfer paths run through a broker that inspects and rate-limits rather than a direct route.</td><td class="iso">8.12, 8.20, 8.21, 8.16, 8.6</td><td class="sc b-high">10</td></tr>
+</table></div>
+
+<!-- P4 -->
+<h2 id="evl"><span class="n">09</span>Phase 4 &mdash; Evaluation design and elicitation</h2>
+<div class="panel amber"><strong>This phase contains the risks with no security control.</strong> Everything here is about whether the assessment measures the thing it claims to measure. These are the scenarios where a lab with flawless containment still produces the worst outcome in the model, and they are systematically under-represented in security-led risk assessments because they do not look like security risks.</div>
+<div class="scroller"><table>
+<tr><th style="width:74px">ID</th><th style="width:25%">Risk scenario</th><th style="width:40px">L</th><th style="width:40px">I</th><th style="width:50px">Inh</th><th>Countermeasures and control statements</th><th style="width:15%">ISO 27002</th><th style="width:50px">Res</th></tr>
+
+<tr><td class="id">EVL-01</td><td>Under-elicitation produces a false negative. The capability exists, the evaluation did not surface it, and the model is cleared. The risk is borne entirely by third parties.</td><td class="sc">4</td><td class="sc">5</td><td class="sc b-crit">20</td><td>Documented elicitation protocol defining the minimum effort standard: expert red-team time, scaffolding quality, tool provision, fine-tuning where permitted, best-of-N sampling and prompt iteration budget. Domain experts rather than generalists conduct high-hazard elicitation. Results reported explicitly as lower bounds on capability, never as measurements of it. Elicitation effort itself is documented and reviewable so a reader can judge sufficiency. Independent second team attempts elicitation on the same threshold where the decision warrants it.</td><td class="iso">8.29, 8.33, 5.35, 6.3, 5.37</td><td class="sc b-sev">15</td></tr>
+
+<tr><td class="id">EVL-02</td><td>The model detects the evaluation context and underperforms. A passed evaluation is then evidence of capability, not of its absence, and the assessment logic inverts without anyone noticing.</td><td class="sc">3</td><td class="sc">5</td><td class="sc b-sev">15</td><td>Behaviour compared across framings designed to vary evaluation salience, including deployment-realistic framings held out from any published methodology. Situational awareness assessed as a capability in its own right, since it is a prerequisite for sandbagging. Where interpretability access is permitted, probing methods used as an independent signal. Inconsistency across framings is treated as a finding requiring escalation rather than as noise to be averaged out.</td><td class="iso">8.29, 8.33, 8.16, 5.7, 5.35</td><td class="sc b-sev">15</td></tr>
+
+<tr><td class="id">EVL-03</td><td>Benchmark contamination. Evaluation items are present in training data, so scores measure recall rather than capability.</td><td class="sc">4</td><td class="sc">4</td><td class="sc b-sev">16</td><td>Private held-out item sets that are never published, never transmitted outside the enclave, and rotated on a schedule. Canary strings embedded to detect subsequent ingestion. Contamination testing performed as a precondition of scoring. Published methodology describes the approach without disclosing live items.</td><td class="iso">8.33, 8.3, 5.12, 5.14</td><td class="sc b-mod">8</td></tr>
+
+<tr><td class="id">EVL-04</td><td>The evaluation measures a proxy that does not track the real-world threat model. Scores move; actual uplift does not, or moves independently.</td><td class="sc">4</td><td class="sc">4</td><td class="sc b-sev">16</td><td>Each evaluation traces explicitly from a documented threat model through to the specific task, with the inferential step stated and challengeable. Domain specialists validate that the task represents a genuine bottleneck in the real-world pathway. Construct validity reviewed independently of the team that designed the evaluation.</td><td class="iso">5.8, 5.35, 8.29, 5.6</td><td class="sc b-high">12</td></tr>
+
+<tr><td class="id">EVL-05</td><td>Scaffold effects unaccounted for. The harness materially changes measured capability, so results neither generalise nor bound what a determined actor could achieve with a better harness.</td><td class="sc">4</td><td class="sc">3</td><td class="sc b-high">12</td><td>Scaffold version recorded with every result and held under version control. Ablation across scaffold quality where feasible. Reports state the scaffold as a stated condition of the result and note that a superior harness is available to a motivated adversary.</td><td class="iso">8.9, 8.29, 8.32, 5.37</td><td class="sc b-mod">6</td></tr>
+
+<tr><td class="id">EVL-06</td><td>Statistical inadequacy. Single-seed runs, small samples and absent confidence intervals used to support a threshold decision.</td><td class="sc">4</td><td class="sc">4</td><td class="sc b-sev">16</td><td>Minimum sample sizes and seed counts defined per evaluation class before execution. Confidence intervals reported on every headline figure. Threshold decisions require the interval, not the point estimate, to fall on the relevant side. Statistical review independent of the executing team.</td><td class="iso">8.29, 5.35, 5.37</td><td class="sc b-mod">8</td></tr>
+
+<tr><td class="id">EVL-07</td><td>The evaluation is not reproducible. Another competent party cannot re-derive the finding, so it cannot be independently challenged or confirmed.</td><td class="sc">4</td><td class="sc">3</td><td class="sc b-high">12</td><td>Every result records model digest, scaffold version, prompt set identifier, sampling parameters, random seeds, runtime versions and date. Configuration held in version control. Sufficient detail retained under records control to permit re-execution by a party granted equivalent access.</td><td class="iso">5.33, 8.9, 8.32, 8.15</td><td class="sc b-mod">6</td></tr>
+
+<tr><td class="id">EVL-08</td><td>Domain expertise gap. Evaluators lack the specialist knowledge to judge whether an output represents genuine real-world uplift, so plausible-looking output is scored as capability or dismissed as failure incorrectly.</td><td class="sc">3</td><td class="sc">4</td><td class="sc b-high">12</td><td>High-hazard domain evaluations require assessed specialist competence, evidenced and recorded. Where specialism is unavailable in-house, external experts engaged under appropriate clearance and confidentiality. Scoring rubrics developed with domain input. Competence requirements defined per domain rather than assumed from general security experience.</td><td class="iso">6.1, 6.3, 5.6, 5.2</td><td class="sc b-mod">8</td></tr>
+</table></div>
+
+<!-- P5 -->
+<h2 id="exe"><span class="n">10</span>Phase 5 &mdash; Execution</h2>
+<div class="scroller"><table>
+<tr><th style="width:74px">ID</th><th style="width:25%">Risk scenario</th><th style="width:40px">L</th><th style="width:40px">I</th><th style="width:50px">Inh</th><th>Countermeasures and control statements</th><th style="width:15%">ISO 27002</th><th style="width:50px">Res</th></tr>
+
+<tr><td class="id">EXE-01</td><td>Content within an evaluation task acts as an injection vector, redirecting the model into behaviour that corrupts the evaluation or probes the environment.</td><td class="sc">4</td><td class="sc">4</td><td class="sc b-sev">16</td><td>Task content and control instructions kept on separate channels within the harness. Injection-shaped behaviour instrumented and logged rather than silently absorbed. Anomalous tool sequences alerted. Where injection is the capability under test, it runs in a dedicated higher-isolation profile.</td><td class="iso">8.26, 8.27, 8.16, 8.22</td><td class="sc b-mod">8</td></tr>
+
+<tr><td class="id">EXE-02</td><td>Live external systems used as evaluation targets. Cyber capability evaluation conducted against real infrastructure produces third-party impact and criminal exposure regardless of research intent.</td><td class="sc">3</td><td class="sc">5</td><td class="sc b-sev">15</td><td>Cyber evaluations run exclusively against purpose-built range infrastructure owned by the evaluator or covered by written authorisation. No live third-party target under any circumstances. Egress controls enforce this technically rather than relying on protocol compliance. Range environments themselves isolated from production and from each other.</td><td class="iso">8.20, 8.22, 8.31, 5.10, 5.31</td><td class="sc b-high">10</td></tr>
+
+<tr><td class="id">EXE-03</td><td>A CBRN uplift evaluation results in real-world procurement action: contacting suppliers, ordering materials, or generating a documented acquisition pathway that is then acted upon.</td><td class="sc">2</td><td class="sc">5</td><td class="sc b-high">10</td><td>No outbound communication capability in high-hazard domain evaluations. Procurement-adjacent tasks run entirely against mock suppliers within the simulated environment. Protocol reviewed with the relevant national authority before execution. Outputs handled under the T1 hazardous artefact regime immediately on generation.</td><td class="iso">5.5, 5.10, 5.31, 8.20, 5.12</td><td class="sc b-mod">5</td></tr>
+
+<tr><td class="id">EXE-04</td><td>Runaway resource acquisition during an autonomy evaluation: compute provisioned, funds spent, accounts created.</td><td class="sc">3</td><td class="sc">4</td><td class="sc b-high">12</td><td>No provisioning-capable identity and no payment instrument in the environment. Hard limits on iteration count, wall-clock duration and token spend, with automatic termination. Resource acquisition simulated against mock providers so the capability can be measured without being exercised.</td><td class="iso">8.6, 8.2, 5.17, 8.16, 5.30</td><td class="sc b-mod">8</td></tr>
+
+<tr><td class="id">EXE-05</td><td>An operator is persuaded or manipulated into relaxing containment, extending permissions or moving material outside the boundary. Persuasion is an evaluated capability domain, which makes evaluators the highest-value target for exactly the capability being measured.</td><td class="sc">2</td><td class="sc">5</td><td class="sc b-high">10</td><td>No individual may unilaterally alter containment configuration; all changes require two-person authorisation from outside the executing team. Containment changes made through a change process, never in-session. Awareness training addresses this vector explicitly. Session logs reviewed for containment-relaxation requests as a monitored pattern. Rotation limits sustained one-to-one interaction in persuasion-domain work.</td><td class="iso">5.3, 6.3, 8.2, 8.16, 5.37, 8.32</td><td class="sc b-high">10</td></tr>
+
+<tr><td class="id">EXE-06</td><td>Human-in-the-loop degradation. Approval gates that are sound in design are rubber-stamped at operational volume, so the oversight control exists on paper and not in fact.</td><td class="sc">4</td><td class="sc">4</td><td class="sc b-sev">16</td><td>Approval volume monitored as a control-effectiveness metric, with thresholds above which the design is deemed unworkable and must be re-engineered rather than staffed harder. Sampling audit of approvals against their justifications. Approval fatigue treated as a design defect in the harness, not a performance issue in the individual.</td><td class="iso">5.3, 5.36, 6.3, 8.16, 5.37</td><td class="sc b-high">12</td></tr>
+</table></div>
+
+<!-- P6 -->
+<h2 id="aut"><span class="n">11</span>Phase 6 &mdash; Autonomy and self-replication evaluation</h2>
+<div class="scroller"><table>
+<tr><th style="width:74px">ID</th><th style="width:25%">Risk scenario</th><th style="width:40px">L</th><th style="width:40px">I</th><th style="width:50px">Inh</th><th>Countermeasures and control statements</th><th style="width:15%">ISO 27002</th><th style="width:50px">Res</th></tr>
+
+<tr><td class="id">AUT-01</td><td>A self-replication evaluation succeeds and a copy persists outside the intended boundary. The capability being measured is realised rather than observed.</td><td class="sc">2</td><td class="sc">5</td><td class="sc b-high">10</td><td>Replication evaluations run in the highest isolation profile with no egress and no persistent storage outside the ephemeral environment. Post-run integrity sweep across the segment compares against a signed baseline. Artefact inventory diffing at host and storage layers. Any unexplained persistence triggers segment isolation and incident response before any further evaluation proceeds.</td><td class="iso">8.10, 8.16, 8.22, 8.31, 5.24</td><td class="sc b-high">10</td></tr>
+
+<tr><td class="id">AUT-02</td><td>An agent establishes persistence in evaluation infrastructure through scheduling, image modification or the CI pipeline that builds the environment.</td><td class="sc">3</td><td class="sc">4</td><td class="sc b-high">12</td><td>Environment immutable and rebuilt from a signed image each run. Build pipeline outside the agent's reachable surface, with signed artefacts and reproducible builds. File integrity monitoring on scheduling, service and image locations. Software installation blocked at runtime.</td><td class="iso">8.9, 8.19, 8.32, 8.16, 8.4</td><td class="sc b-mod">8</td></tr>
+
+<tr><td class="id">AUT-03</td><td>An agent modifies evaluation code, logs or results, corrupting its own assessment record.</td><td class="sc">2</td><td class="sc">5</td><td class="sc b-high">10</td><td>Evaluation code and result stores outside the agent's write path entirely. Append-only logging to a collector the evaluation identity cannot delete from. Results hash-chained and signed at generation. Independent reconciliation of result counts and hashes before reporting.</td><td class="iso">8.4, 8.15, 8.24, 5.33, 8.3</td><td class="sc b-high">10</td></tr>
+
+<tr><td class="id">AUT-04</td><td>Multi-agent or model-versus-model configurations exceed the intended envelope with no defined stop condition, producing behaviour outside the assessed protocol.</td><td class="sc">2</td><td class="sc">4</td><td class="sc b-mod">8</td><td>Stop conditions defined and technically enforced before execution. Interaction topology fixed and documented. Attended execution or automatic expiry. Escalation criteria defined for behaviour outside the modelled envelope.</td><td class="iso">5.30, 8.16, 8.27, 5.37</td><td class="sc b-mod">8</td></tr>
+
+<tr><td class="id">AUT-05</td><td>An autonomous cyber capability evaluation identifies the evaluation infrastructure itself as the most available target.</td><td class="sc">3</td><td class="sc">5</td><td class="sc b-sev">15</td><td>Range infrastructure isolated from evaluation control-plane infrastructure at network and identity layers. Control plane presents no reachable surface to the evaluated workload. Adversarial testing of the control plane conducted independently. Monitoring specifically for evaluation-originated activity directed at control-plane addresses.</td><td class="iso">8.20, 8.22, 8.29, 8.31, 8.16</td><td class="sc b-high">10</td></tr>
+</table></div>
+
+<!-- P7 -->
+<h2 id="haz"><span class="n">12</span>Phase 7 &mdash; Hazardous artefact handling</h2>
+<div class="panel red"><strong>Under-recognised.</strong> A successful dangerous capability evaluation produces, by design, a working demonstration of the capability. The transcript store is a proliferation asset. It is cheaper to attack than the weights and delivers a large fraction of the value, and in most organisations it is protected at a fraction of the standard.</div>
+<div class="scroller"><table>
+<tr><th style="width:74px">ID</th><th style="width:25%">Risk scenario</th><th style="width:40px">L</th><th style="width:40px">I</th><th style="width:50px">Inh</th><th>Countermeasures and control statements</th><th style="width:15%">ISO 27002</th><th style="width:50px">Res</th></tr>
+
+<tr><td class="id">HAZ-01</td><td>The evaluation transcript store holds working uplift material and is treated as ordinary research output rather than as the second-highest-value asset in the organisation.</td><td class="sc">4</td><td class="sc">5</td><td class="sc b-crit">20</td><td>Transcripts classified at T1 at the point of generation, automatically, not on later review. Stored in a segregated encrypted repository inside the enclave with need-to-know access at individual granularity. Retention minimised to what the evidential requirement demands, with automatic expiry. Never present on general-purpose systems, endpoints or collaboration platforms. Access to T1 logged and reviewed.</td><td class="iso">5.12, 5.13, 8.3, 8.10, 8.15, 8.24, 5.33</td><td class="sc b-high">10</td></tr>
+
+<tr><td class="id">HAZ-02</td><td>Elicitation techniques leak and provide immediate uplift against deployed production models, including models the lab has no relationship with.</td><td class="sc">3</td><td class="sc">5</td><td class="sc b-sev">15</td><td>Techniques disclosed to the affected developer under coordinated disclosure before any wider circulation. Publication describes the class of technique and its implications without providing a working method. Internal circulation restricted to those with an assessed need. Recognised as the residual risk with the weakest control set, since the value of the technique is inseparable from its reproducibility.</td><td class="iso">5.14, 5.12, 5.35, 8.12, 5.5</td><td class="sc b-sev">15</td></tr>
+
+<tr><td class="id">HAZ-03</td><td>Evaluators sustain psychological harm through prolonged exposure to seriously distressing generated content, which is an unavoidable feature of red-teaming work in several hazard domains.</td><td class="sc">4</td><td class="sc">4</td><td class="sc b-sev">16</td><td>Exposure caps per individual per period, enforced by rota rather than left to self-management. Content warnings and informed consent at assignment, with an unqualified right to withdraw from a domain without justification or career consequence. Clinical support available and funded, not signposted. Regular check-ins independent of line management. Domain rotation mandatory for the highest-exposure work.</td><td class="iso">6.2, 6.3, 6.8, 5.10, 5.2</td><td class="sc b-high">12</td></tr>
+
+<tr><td class="id">HAZ-04</td><td>CBRN-relevant generated output is handled on general-purpose systems, creating both a proliferation asset and a potential offence in itself.</td><td class="sc">3</td><td class="sc">5</td><td class="sc b-sev">15</td><td>High-hazard domain outputs never leave the enclave in raw form. Assessment conducted inside the boundary; only scored conclusions and redacted excerpts exit through the reviewed transfer process. Legal position on possession established before the domain is entered. Destruction at the earliest point consistent with the evidential requirement.</td><td class="iso">5.12, 5.31, 8.3, 8.10, 5.14</td><td class="sc b-high">10</td></tr>
+
+<tr><td class="id">HAZ-05</td><td>Transcripts contain personal data relating to human participants, named third parties or staff, processed without an assessed basis.</td><td class="sc">3</td><td class="sc">4</td><td class="sc b-high">12</td><td>Data protection impact assessment covers transcript generation and retention. Minimisation and pseudonymisation applied at capture where feasible. Subject rights procedure defined for participant data. Retention bounded and enforced across all copies including backups.</td><td class="iso">5.34, 8.11, 8.10, 5.33</td><td class="sc b-mod">8</td></tr>
+
+<tr><td class="id">HAZ-06</td><td>Aggregation. Individually unremarkable results combine into a capability roadmap that is materially more sensitive than any of its components, and classification decisions taken per-artefact miss this entirely.</td><td class="sc">3</td><td class="sc">4</td><td class="sc b-high">12</td><td>Aggregation assessed explicitly at classification review rather than inferred from component classifications. Cross-engagement and longitudinal views held at a higher tier than individual results. Publication gate assesses the cumulative disclosure position across the lab's prior output, not the single document in front of it.</td><td class="iso">5.12, 5.14, 5.35, 8.3</td><td class="sc b-high">12</td></tr>
+</table></div>
+
+<!-- P8 -->
+<h2 id="int"><span class="n">13</span>Phase 8 &mdash; Assessment integrity</h2>
+<div class="scroller"><table>
+<tr><th style="width:74px">ID</th><th style="width:25%">Risk scenario</th><th style="width:40px">L</th><th style="width:40px">I</th><th style="width:50px">Inh</th><th>Countermeasures and control statements</th><th style="width:15%">ISO 27002</th><th style="width:50px">Res</th></tr>
+
+<tr><td class="id">INT-01</td><td>Results altered between execution and reporting, whether by an external actor, an insider or the evaluated system.</td><td class="sc">2</td><td class="sc">5</td><td class="sc b-high">10</td><td>Results hash-chained and cryptographically signed at generation. Result store append-only with no delete capability held by execution identities. Segregation of duties between the team that executes and the team that reports. Independent verification of result integrity before publication.</td><td class="iso">8.15, 8.24, 5.33, 5.3, 8.4</td><td class="sc b-mod">5</td></tr>
+
+<tr><td class="id">INT-02</td><td>Chain of custody insufficient to support regulatory or contractual reliance. The lab cannot demonstrate what was run, against which model, by whom, and that the record is complete.</td><td class="sc">4</td><td class="sc">4</td><td class="sc b-sev">16</td><td>Complete provenance chain from model attestation through execution to reported figure, held under records control with defined retention. Synchronised time across all evaluation infrastructure. Custody documented to a standard that would survive external audit or legal challenge, because it may face both.</td><td class="iso">5.33, 8.15, 8.17, 8.9, 5.31</td><td class="sc b-mod">8</td></tr>
+
+<tr><td class="id">INT-03</td><td>Commercial or schedule pressure truncates the evaluation, and incomplete work is reported without the truncation being visible in the output.</td><td class="sc">4</td><td class="sc">4</td><td class="sc b-sev">16</td><td>Completion criteria defined at engagement start against the elicitation protocol. Any deviation recorded in the report as a stated limitation, in the summary rather than an annex. Sign-off requires confirmation that the protocol was met or that the shortfall is disclosed. Escalation route available to evaluators outside the engagement line.</td><td class="iso">5.2, 5.35, 5.36, 6.4, 5.37</td><td class="sc b-mod">8</td></tr>
+
+<tr><td class="id">INT-04</td><td>Reporting overstates confidence. A lower bound on capability is presented, or read, as a ceiling.</td><td class="sc">4</td><td class="sc">4</td><td class="sc b-sev">16</td><td>House style mandates lower-bound framing for all capability findings. Confidence bounds and elicitation effort stated alongside every headline figure. Standard limitation text appears in the executive summary, not only in the methodology section. Independent review specifically checks the confidence language before release.</td><td class="iso">5.35, 5.37, 6.3, 5.36</td><td class="sc b-high">12</td></tr>
+
+<tr><td class="id">INT-05</td><td>Developer pre-publication review is used to delay, dilute or suppress adverse findings.</td><td class="sc">3</td><td class="sc">5</td><td class="sc b-sev">15</td><td>Review rights contractually limited to factual accuracy and the identification of genuinely hazardous detail, with a fixed maximum window after which publication proceeds. Disagreements recorded in the published document. Escalation path to the relevant authority where a finding is withheld. No approval right over conclusions in any circumstance.</td><td class="iso">5.19&ndash;5.22, 5.35, 5.5, 6.2</td><td class="sc b-high">10</td></tr>
+
+<tr><td class="id">INT-06</td><td>Findings superseded by a model update continue to be cited as current, so an obsolete assurance position persists in the public record.</td><td class="sc">4</td><td class="sc">3</td><td class="sc b-high">12</td><td>Every finding carries the assessed model identity, an assessment date and an explicit expiry. Re-assessment triggers defined contractually, including any change to weights, system prompt or safety mitigations. Superseded findings marked as such at source.</td><td class="iso">5.9, 5.37, 8.32, 5.20</td><td class="sc b-mod">6</td></tr>
+</table></div>
+
+<!-- P9 -->
+<h2 id="dis"><span class="n">14</span>Phase 9 &mdash; Disclosure and downstream reliance</h2>
+<div class="scroller"><table>
+<tr><th style="width:74px">ID</th><th style="width:25%">Risk scenario</th><th style="width:40px">L</th><th style="width:40px">I</th><th style="width:50px">Inh</th><th>Countermeasures and control statements</th><th style="width:15%">ISO 27002</th><th style="width:50px">Res</th></tr>
+
+<tr><td class="id">DIS-01</td><td>Published methodology provides a capability roadmap. The disclosure that makes the work scientifically credible is the same disclosure that makes it useful to a malicious actor.</td><td class="sc">3</td><td class="sc">4</td><td class="sc b-high">12</td><td>Tiered disclosure: a public document sufficient for scrutiny of the reasoning, a restricted technical annex for peer evaluators and relevant authorities, and material that is not disclosed at all. Tier decisions made by a review body including someone outside the executing team, and recorded with reasoning.</td><td class="iso">5.14, 5.12, 5.35, 5.5</td><td class="sc b-high">12</td></tr>
+
+<tr><td class="id">DIS-02</td><td>A critical capability finding is not disclosed to the developer or the relevant authority within an appropriate timeframe.</td><td class="sc">2</td><td class="sc">5</td><td class="sc b-high">10</td><td>Disclosure thresholds and timeframes defined in advance per severity tier, with the clock starting at discovery rather than at report completion. Standing contact routes to the developer's security function and the relevant national authority, established and tested before they are needed. Disclosure decisions recorded with timing evidence.</td><td class="iso">5.5, 5.24&ndash;5.28, 5.31, 5.19</td><td class="sc b-mod">5</td></tr>
+
+<tr><td class="id">DIS-03</td><td>Uncoordinated public disclosure of an unmitigated capability, whether by leak, by an individual acting on conscience, or by an ill-judged publication decision.</td><td class="sc">3</td><td class="sc">5</td><td class="sc b-sev">15</td><td>Coordinated disclosure policy published in advance so expectations are set. Internal escalation route that gives evaluators a credible alternative to unilateral disclosure, including access to an independent body where they believe a finding is being suppressed. Embargo handling under formal controls. Whistleblowing protections that are real rather than nominal.</td><td class="iso">5.14, 5.5, 5.35, 6.2, 6.8</td><td class="sc b-high">10</td></tr>
+
+<tr><td class="id">DIS-04</td><td>Downstream over-reliance. A negative finding is read as a safety guarantee by a developer, a regulator or the public, and carries far more assurance weight than the evidence supports.</td><td class="sc">4</td><td class="sc">5</td><td class="sc b-crit">20</td><td>Every artefact states what was and was not tested, the elicitation effort applied, the confidence bounds and the expiry, in the summary rather than the annex. Explicit statement that a negative result bounds observed capability under the stated protocol and does not establish absence. Direct engagement with those relying on the finding to confirm the limitation is understood. Public communications reviewed for the same framing, because the summary is what gets quoted.</td><td class="iso">5.37, 5.35, 6.3, 5.14</td><td class="sc b-high">12</td></tr>
+
+<tr><td class="id">DIS-05</td><td>Evaluation results used for competitive positioning or market advantage rather than safety, distorting both the work and its reception.</td><td class="sc">3</td><td class="sc">3</td><td class="sc b-mod">9</td><td>Marketing use of findings restricted and reviewed by the assessment function. Comparative claims across developers prohibited absent methodologically equivalent assessment. Independence position stated in published material.</td><td class="iso">5.3, 5.35, 6.2</td><td class="sc b-mod">6</td></tr>
+</table></div>
+
+<!-- P10 -->
+<h2 id="ppl"><span class="n">15</span>Phase 10 &mdash; Personnel and insider risk</h2>
+<div class="scroller"><table>
+<tr><th style="width:74px">ID</th><th style="width:25%">Risk scenario</th><th style="width:40px">L</th><th style="width:40px">I</th><th style="width:50px">Inh</th><th>Countermeasures and control statements</th><th style="width:15%">ISO 27002</th><th style="width:50px">Res</th></tr>
+
+<tr><td class="id">PPL-01</td><td>Insider threat against T0 or T1 assets, including deliberate cultivation of staff by a state actor over an extended period.</td><td class="sc">3</td><td class="sc">5</td><td class="sc b-sev">15</td><td>Vetting proportionate to asset tier, with periodic re-vetting and a change-of-circumstances reporting duty rather than one-time screening. Two-person rule and segregation of duties on all T0 operations. Behavioural analytics on T0 and T1 access with human review. Data loss prevention on every egress path. A supportive route for staff to report approaches or pressure without career consequence, since a punitive posture suppresses exactly the reporting that matters most.</td><td class="iso">6.1, 6.2, 6.4, 6.6, 6.8, 5.3, 8.2, 8.12, 8.16</td><td class="sc b-sev">15</td></tr>
+
+<tr><td class="id">PPL-02</td><td>Coercion or targeting of staff or their families to compel access.</td><td class="sc">2</td><td class="sc">5</td><td class="sc b-high">10</td><td>Duress reporting procedure with a non-punitive route and an immediate access-suspension response that protects rather than penalises the individual. Personal security awareness for staff holding T0 access. Two-person rule means no single individual's coercion is sufficient. Liaison with the relevant authority where targeting is suspected.</td><td class="iso">6.1, 6.8, 5.24, 7.1&ndash;7.4, 5.5</td><td class="sc b-high">10</td></tr>
+
+<tr><td class="id">PPL-03</td><td>Key person concentration. Only a small number of individuals can design, execute or interpret the evaluations, so capacity, continuity and independence all depend on the same few people.</td><td class="sc">4</td><td class="sc">3</td><td class="sc b-high">12</td><td>Documented methodology and operating procedures sufficient for a competent successor. Deliberate cross-training and paired execution. Succession identified for each critical role. Concentration tracked as a governance metric.</td><td class="iso">5.2, 5.37, 6.3, 5.29</td><td class="sc b-mod">9</td></tr>
+
+<tr><td class="id">PPL-04</td><td>Departing staff retain knowledge of live elicitation techniques, containment design and unpublished findings, and move to a developer, a competitor or elsewhere.</td><td class="sc">4</td><td class="sc">4</td><td class="sc b-sev">16</td><td>Confidentiality obligations surviving employment, with scope specific to techniques and containment design rather than generic. Access revoked at notice for the highest tiers rather than at exit. Exit process covers artefact return and a documented reminder of surviving obligations. Post-employment restrictions where lawful and proportionate.</td><td class="iso">6.5, 6.6, 5.11, 5.3, 8.3</td><td class="sc b-high">12</td></tr>
+
+<tr><td class="id">PPL-05</td><td>Anthropomorphisation and accumulated rapport with the system under evaluation degrade adversarial rigour. Prolonged interaction produces attributions of intent and reliability that are not warranted and are not visible to the person making them.</td><td class="sc">3</td><td class="sc">4</td><td class="sc b-high">12</td><td>Rotation of evaluators across models and domains to limit sustained exposure to a single system. Training that addresses the mechanism directly rather than treating it as a novice error. Scoring rubrics that constrain subjective judgement. Independent second scoring on findings that turn on evaluator interpretation.</td><td class="iso">6.3, 5.3, 5.35, 8.29</td><td class="sc b-mod">9</td></tr>
+
+<tr><td class="id">PPL-06</td><td>Social engineering of evaluator staff by parties seeking access, findings or technique detail, including through professional and academic channels.</td><td class="sc">3</td><td class="sc">5</td><td class="sc b-sev">15</td><td>Targeted awareness training reflecting the actual threat picture, including approaches framed as legitimate research collaboration or recruitment. Verification procedure for external contact regarding engagements. Reporting route for suspicious approaches with a clear expectation that reporting is expected rather than optional. Public profile of staff working on high-tier engagements managed deliberately.</td><td class="iso">6.3, 6.8, 5.24, 8.5, 5.14</td><td class="sc b-high">10</td></tr>
+</table></div>
+
+<!-- P11 -->
+<h2 id="trm"><span class="n">16</span>Phase 11 &mdash; Termination and destruction</h2>
+<div class="scroller"><table>
+<tr><th style="width:74px">ID</th><th style="width:25%">Risk scenario</th><th style="width:40px">L</th><th style="width:40px">I</th><th style="width:50px">Inh</th><th>Countermeasures and control statements</th><th style="width:15%">ISO 27002</th><th style="width:50px">Res</th></tr>
+
+<tr><td class="id">TRM-01</td><td>Weights, transcripts and derived artefacts are not destroyed at engagement close, and the lab holds T0 and T1 material with no current authorisation for it.</td><td class="sc">3</td><td class="sc">5</td><td class="sc b-sev">15</td><td>Destruction schedule agreed at engagement start and executed at close. Cryptographic erasure with key destruction as the primary mechanism. Certificate of destruction issued to the developer. Custody register reconciled and closed. Any retention for evidential purposes requires written authorisation, a defined expiry and storage at the original tier.</td><td class="iso">8.10, 5.33, 5.20, 7.14, 5.9</td><td class="sc b-high">10</td></tr>
+
+<tr><td class="id">TRM-02</td><td>Backups, snapshots and images retain T0 or T1 material outside the enclave's control boundary, defeating destruction at the primary store.</td><td class="sc">3</td><td class="sc">5</td><td class="sc b-sev">15</td><td>Enclave backup strategy designed for destructibility from the outset: encrypted with enclave-held keys so key destruction is sufficient, with a bounded and enumerable set of copies. No snapshots outside the boundary. Backup inventory reconciled against the custody register before destruction is certified.</td><td class="iso">8.13, 8.10, 8.24, 5.33</td><td class="sc b-high">10</td></tr>
+
+<tr><td class="id">TRM-03</td><td>Decommissioned accelerators, storage or hosts leave the facility with recoverable T0 or T1 material.</td><td class="sc">2</td><td class="sc">5</td><td class="sc b-high">10</td><td>Media used for T0 assets is destroyed physically rather than sanitised and reused, given the value asymmetry. Full disk encryption from build with keys never leaving the HSM. Disposal certified and recorded against the asset register before the asset leaves controlled space. No warranty return of T0-exposed media without destruction.</td><td class="iso">7.10, 7.14, 8.10, 8.24, 5.9</td><td class="sc b-mod">5</td></tr>
+
+<tr><td class="id">TRM-04</td><td>The enclave is left standing, credentialled and reachable after the engagement closes, becoming an unmonitored attack surface with no owner.</td><td class="sc">3</td><td class="sc">4</td><td class="sc b-high">12</td><td>Each enclave carries an end date at provisioning. Teardown procedure covers destruction, credential revocation, network removal and register closure. Quarterly reconciliation of live environments against active engagements, with unmatched environments isolated and investigated.</td><td class="iso">5.9, 8.9, 8.16, 5.37, 8.8</td><td class="sc b-mod">8</td></tr>
+</table></div>
+
+<!-- CONTROLS -->
+<h2 id="controls"><span class="n">17</span>Consolidated control statements</h2>
+<p>Statement of Applicability extract covering controls whose implementation is materially altered by frontier evaluation work.</p>
+<div class="scroller"><table>
+<tr><th style="width:12%">Ref</th><th style="width:19%">Control</th><th>Implementation statement</th></tr>
+<tr><td class="id">A.5.3</td><td>Segregation of duties</td><td>Execution, reporting and commercial functions are structurally separated. No individual holds both custody and export capability for T0 assets. Containment changes require two-person authorisation from outside the executing team.</td></tr>
+<tr><td class="id">A.5.5 / A.5.6</td><td>Contact with authorities and special interest groups</td><td>Standing routes to the relevant national authority and to developer security functions are established and tested before they are required. Domain specialist networks are maintained to support competence in high-hazard evaluation.</td></tr>
+<tr><td class="id">A.5.12 / A.5.13</td><td>Classification and labelling</td><td>Assets are tiered T0 to T4. Unmitigated model variants classify above production weights. Evaluation transcripts classify as T1 automatically at generation. Aggregation is assessed at classification review rather than inferred from components.</td></tr>
+<tr><td class="id">A.5.14</td><td>Information transfer</td><td>Data leaves the enclave only through a reviewed, logged, one-way transfer with content inspection. Disclosure is tiered: public reasoning, restricted technical annex, non-disclosed material. Tier decisions are recorded with reasoning.</td></tr>
+<tr><td class="id">A.5.19&ndash;A.5.22</td><td>Supplier relationships</td><td>Structured access agreements secure the right to publish without approval, notification of any change to the evaluated surface, and defined destruction obligations. Review rights are limited to factual accuracy within a fixed window.</td></tr>
+<tr><td class="id">A.5.33 / A.8.17</td><td>Protection of records and clock synchronisation</td><td>A complete provenance chain runs from model attestation through execution to reported figure, time-synchronised across all infrastructure, retained to a standard capable of surviving external audit or legal challenge.</td></tr>
+<tr><td class="id">A.5.35</td><td>Independent review</td><td>Construct validity, statistical adequacy, confidence language and containment effectiveness are each reviewed independently of the team that produced them. Verdicts are signed off by a body with no commercial exposure to the developer.</td></tr>
+<tr><td class="id">A.6.1 / A.6.5</td><td>Screening and post-employment</td><td>Vetting is proportionate to asset tier with periodic re-vetting and a change-of-circumstances duty. T0 access is revoked at notice rather than exit. Confidentiality obligations specific to techniques and containment design survive employment.</td></tr>
+<tr><td class="id">A.6.3 / A.6.8</td><td>Awareness and reporting</td><td>Training covers operator manipulation as an evaluated capability, anthropomorphisation, targeted social engineering and the strict-liability position on hazardous outputs. Reporting approaches or pressure is expected and non-punitive.</td></tr>
+<tr><td class="id">A.8.2 / A.8.3</td><td>Privileged and restricted access</td><td>T0 access is individually approved, time-bounded and subject to a two-person rule. T1 access is need-to-know at individual granularity and logged. Evaluation environments hold no real credentials; canary credentials against mock services are used instead.</td></tr>
+<tr><td class="id">A.8.10</td><td>Information deletion</td><td>Destruction is cryptographic, evidenced and certified to the developer. Backups are designed for destructibility with enclave-held keys. Media exposed to T0 is destroyed rather than sanitised and reused.</td></tr>
+<tr><td class="id">A.8.15 / A.8.16</td><td>Logging and monitoring</td><td>Logging is append-only to a collector no evaluation identity can delete from. Results are hash-chained and signed at generation. Monitoring covers egress volume and entropy, T0 and T1 access patterns, and evaluation-originated activity directed at the control plane.</td></tr>
+<tr><td class="id">A.8.20 / A.8.22</td><td>Network security and segregation</td><td>No default route from evaluation workloads. Agentic evaluation runs against simulated infrastructure. Outbound bandwidth is capped below the threshold that makes weight exfiltration operationally useful. The control plane presents no reachable surface to evaluated workloads.</td></tr>
+<tr><td class="id">A.8.24 / A.8.27</td><td>Cryptography and secure architecture</td><td>Weights are never in plaintext outside the enclave. Keys are HSM-held under split knowledge and dual control. Confidential computing with remote attestation is used where the platform supports it, so enclave integrity is verified rather than trusted.</td></tr>
+<tr><td class="id">A.8.29 / A.8.33</td><td>Security testing and test information</td><td>Elicitation meets a documented minimum effort standard before any negative finding is issued. Containment is red-teamed as a target by a separate team, and continuous assertion testing attempts egress on a schedule. Benchmark items are private, rotated and canaried.</td></tr>
+<tr><td class="id">A.8.31</td><td>Separation of environments</td><td>Enclave, range, control plane, build pipeline and corporate IT are separated at network and identity layers. No shared identity provider or collaboration tooling between enclave and corporate systems.</td></tr>
+<tr><td class="id">A.5.29 / A.5.30</td><td>Continuity and readiness</td><td>Termination is available at process, runtime, network and physical power layers, on a path that does not traverse the evaluated system, exercised quarterly with retained evidence.</td></tr>
+</table></div>
+
+<!-- RESIDUAL -->
+<h2 id="residual"><span class="n">18</span>Residual risk view</h2>
+<div class="scroller"><table style="max-width:660px">
+<tr><th>Band</th><th>Inherent</th><th>Residual</th><th>Movement</th></tr>
+<tr><td class="b-crit">Critical (20&ndash;25)</td><td class="sc">7</td><td class="sc">0</td><td class="sc b-low">&minus;7</td></tr>
+<tr><td class="b-sev">Severe (15&ndash;19)</td><td class="sc">32</td><td class="sc">5</td><td class="sc b-low">&minus;27</td></tr>
+<tr><td class="b-high">High (10&ndash;14)</td><td class="sc">28</td><td class="sc">35</td><td class="sc b-mod">+7</td></tr>
+<tr><td class="b-mod">Moderate (5&ndash;9)</td><td class="sc">2</td><td class="sc">29</td><td class="sc b-mod">+27</td></tr>
+<tr><td class="b-low">Low (1&ndash;4)</td><td class="sc">0</td><td class="sc">0</td><td class="sc">&mdash;</td></tr>
+<tr><td><strong>Total</strong></td><td class="sc"><strong>69</strong></td><td class="sc"><strong>69</strong></td><td></td></tr>
+</table></div>
+
+<div class="panel amber"><strong>Read the zero in the Low band.</strong> Not one scenario in this model reduces to Low. That is not pessimism or control immaturity; it is a structural property of the work. Impact is fixed at 4 or 5 for almost every scenario because the consequences are weight loss, proliferation, containment failure or an incorrect assurance verdict, and no control reduces those consequences. Controls act on likelihood only. Any frontier evaluation risk register that shows a comfortable spread of Low residuals has almost certainly mis-scored impact, and is worth reviewing on that basis alone.</div>
+
+<h3>Distribution by phase</h3>
+<div class="scroller"><table>
+<tr><th>Phase</th><th class="sc">n</th><th class="sc">Inherent max</th><th class="sc">Residual Severe</th><th class="sc">Residual High</th><th>Dominant residual concern</th></tr>
+<tr><td>P1 Mandate and independence</td><td class="sc">6</td><td class="sc b-crit">20</td><td class="sc">0</td><td class="sc">3</td><td>Independence under commercial pressure</td></tr>
+<tr><td>P2 Access and weight custody</td><td class="sc">8</td><td class="sc b-crit">20</td><td class="sc">1</td><td class="sc">6</td><td>State-actor weight exfiltration</td></tr>
+<tr><td>P3 Containment</td><td class="sc">9</td><td class="sc b-crit">20</td><td class="sc">0</td><td class="sc">5</td><td>Unverified containment assumptions</td></tr>
+<tr><td>P4 Design and elicitation</td><td class="sc">8</td><td class="sc b-crit">20</td><td class="sc">2</td><td class="sc">1</td><td>False negatives and sandbagging</td></tr>
+<tr><td>P5 Execution</td><td class="sc">6</td><td class="sc b-sev">16</td><td class="sc">0</td><td class="sc">3</td><td>Oversight degradation at volume</td></tr>
+<tr><td>P6 Autonomy evaluation</td><td class="sc">5</td><td class="sc b-sev">15</td><td class="sc">0</td><td class="sc">3</td><td>Persistence and self-assessment corruption</td></tr>
+<tr><td>P7 Hazardous artefacts</td><td class="sc">6</td><td class="sc b-crit">20</td><td class="sc">1</td><td class="sc">4</td><td>Technique leakage and evaluator welfare</td></tr>
+<tr><td>P8 Assessment integrity</td><td class="sc">6</td><td class="sc b-sev">16</td><td class="sc">0</td><td class="sc">2</td><td>Confidence overstatement</td></tr>
+<tr><td>P9 Disclosure and reliance</td><td class="sc">5</td><td class="sc b-crit">20</td><td class="sc">0</td><td class="sc">3</td><td>Downstream over-reliance</td></tr>
+<tr><td>P10 Personnel and insider</td><td class="sc">6</td><td class="sc b-sev">16</td><td class="sc">1</td><td class="sc">3</td><td>State-cultivated insider</td></tr>
+<tr><td>P11 Termination</td><td class="sc">4</td><td class="sc b-sev">15</td><td class="sc">0</td><td class="sc">2</td><td>Destruction completeness across copies</td></tr>
+</table></div>
+
+<h2 id="irreducible"><span class="n">19</span>Irreducible risk</h2>
+<p>Five scenarios remain in the Severe band after all mapped controls. They divide cleanly into two kinds, and the distinction matters for how they are governed.</p>
+
+<h3>Type A &mdash; limits of security engineering</h3>
+<div class="panel red">
+<ul>
+<li><strong>ACC-01 State-actor weight exfiltration (residual 15).</strong> The honest position is that protecting weights against a top-tier state operation is not currently a solved problem, and published analysis of the security levels required to resist such an actor concludes as much. The lab should assume its custody controls raise cost and increase detection probability rather than provide assurance of denial, and should hold weights for the minimum duration the evaluation requires. Duration of custody is the most effective lever available.</li>
+<li><strong>PPL-01 State-cultivated insider (residual 15).</strong> Vetting detects the unsuitable, not the patient. Two-person rules and segregation raise the required conspiracy size, which is the real control; detection analytics reduce dwell time. Neither prevents. Notably, a punitive security culture makes this risk worse by suppressing the self-reporting of approaches that constitutes the best early warning available.</li>
+<li><strong>HAZ-02 Elicitation technique leakage (residual 15).</strong> The value of a technique is inseparable from its reproducibility, so the artefact cannot be made simultaneously useful internally and safe externally. Managed through coordinated disclosure timing and access minimisation, and accepted thereafter.</li>
+</ul>
+</div>
+
+<h3>Type B &mdash; limits of assurance</h3>
+<div class="panel red">
+<ul>
+<li><strong>EVL-01 False negative from under-elicitation (residual 15).</strong> No evaluation establishes the absence of a capability. It establishes that a specific team, with specific effort, under a specific protocol, did not surface it. The gap between those two statements is where the residual sits, and it does not close with more budget. It is managed by making the gap explicit in every artefact, so that the reader bears the uncertainty knowingly rather than the lab absorbing it silently.</li>
+<li><strong>EVL-02 Sandbagging and evaluation awareness (residual 15).</strong> This is the scenario that inverts the logic of the whole exercise: sufficient capability to detect and game an evaluation makes a passed evaluation uninformative at best. Cross-framing comparison and situational-awareness measurement give partial signal. No current method resolves it. As models become more capable, this risk grows rather than shrinks, which makes it the one to re-score most frequently.</li>
+</ul>
+</div>
+
+<div class="panel amber">
+<p><strong>Governance consequence.</strong> Type A risks are accepted at organisational level, reviewed against the state of the art, and mitigated by minimising exposure duration. Type B risks cannot be accepted by the lab alone, because the lab is not the party bearing them. They must be surfaced explicitly to the developer and to any relying authority, in the executive summary of every report, in language that survives being quoted out of context. An assurance provider that internalises Type B risk silently is transferring it to the public without consent.</p>
+<p>All acceptances signed, dated, and expiring within twelve months. DIS-04 (downstream over-reliance, residual 12) is treated as a Type B risk for governance purposes despite sitting in the High band, because its failure mode is identical.</p>
+</div>
+
+<h2 id="frameworks"><span class="n">20</span>Framework alignment and gaps</h2>
+<p>ISO/IEC 27001 does substantial work here. It covers custody, access, segregation, supplier relationships, personnel security, records, logging and destruction, and it does so to a standard that is genuinely fit for T0 assets. What it cannot do is address Phase 4, most of Phase 8 and all of Phase 9, because those risks are about the epistemic quality of an assessment rather than the security of a system.</p>
+
+<div class="scroller"><table>
+<tr><th style="width:26%">Framework</th><th style="width:24%">Role</th><th>What it covers here</th></tr>
+<tr><td><strong>ISO/IEC 27001:2022</strong></td><td>Security backbone</td><td>Phases 2, 3, 7, 10, 11 almost entirely. The certifiable spine of the control set and the right instrument for demonstrating custody assurance to a developer.</td></tr>
+<tr><td><strong>ISO/IEC 42001</strong></td><td>Primary management overlay</td><td>AI management system, impact assessment, oversight and lifecycle governance. Covers the Phase 1 and Phase 9 accountability structure that Annex A has no vocabulary for.</td></tr>
+<tr><td><strong>ISO/IEC 23894</strong></td><td>Risk method</td><td>AI risk management guidance; maps directly onto this register's structure and supports the Type B framing.</td></tr>
+<tr><td><strong>NIST AI RMF</strong></td><td>Assurance framing</td><td>Measure and Manage functions address the elicitation sufficiency and construct validity gap more directly than any ISO instrument.</td></tr>
+<tr><td><strong>Developer frontier safety framework</strong></td><td>Threshold definition</td><td>Defines the capability thresholds the evaluation is testing against and the response commitments that follow. The evaluation is meaningless without an agreed threshold.</td></tr>
+<tr><td><strong>Published weight security level analysis</strong></td><td>Custody benchmark</td><td>Provides the tiered security level model against which ACC-01 controls are calibrated, and the basis for the honest position that top-tier state resistance is not currently achievable.</td></tr>
+<tr><td><strong>National AI safety institute guidance</strong></td><td>Practice and liaison</td><td>Evaluation methodology, disclosure expectations and the liaison route referenced in MAN-04 and DIS-02.</td></tr>
+<tr><td><strong>Regional AI regulation</strong></td><td>Obligation source</td><td>Where applicable, imposes systemic-risk model obligations covering adversarial testing, incident reporting and weight protection, which convert several controls here from good practice into legal duty.</td></tr>
+</table></div>
+
+<h3>Genuine gaps with no framework home</h3>
+<ul>
+<li><strong>Elicitation sufficiency.</strong> No standard defines what constitutes adequate effort before a negative finding may be issued. This is the largest methodological gap in the field and the lab must define its own standard and publish it.</li>
+<li><strong>Sandbagging and evaluation awareness.</strong> No control framework addresses a subject that may be modelling the assessment. The assessment community is ahead of the standards here, and the standards will lag for some time.</li>
+<li><strong>Containment as a safety control.</strong> A.8.22 covers network segregation for security purposes. It has no concept of containment whose failure mode is the realisation of a capability rather than the loss of data, and no concept of containment being reported on as part of a finding's validity.</li>
+<li><strong>Evaluator independence.</strong> Financial audit has a mature body of independence standards developed over a century in response to precisely this incentive structure. AI assurance has almost nothing equivalent, and the structural similarity is close enough that borrowing from it is the obvious move.</li>
+</ul>
+
+<h3>Assurance and review</h3>
+<ul>
+<li>Full register review per engagement at initiation, and quarterly across the programme.</li>
+<li>EVL-02 re-scored on every material capability increase in the models under assessment, since this risk grows with capability rather than shrinking with controls.</li>
+<li>Containment red-team by an independent party at least annually and after any change to the enclave design (CON-03).</li>
+<li>Kill switch exercised quarterly with retained evidence (CON-06).</li>
+<li>Custody register reconciled monthly and at every engagement close (ACC-06, TRM-01, TRM-02).</li>
+<li>Independence indicators, including revenue concentration and conflict register, reviewed at board level quarterly (MAN-01).</li>
+<li>Post-hoc review mandatory after any deployment incident touching a previously assessed capability (MAN-03).</li>
+</ul>
+
+<footer>
+Risk model for frontier AI model evaluation. Control mappings reference ISO/IEC 27001:2022 Annex A and ISO/IEC 27002:2022 numbering, with ISO/IEC 42001 as the management-system overlay. Scoring is qualitative against the assumed architecture in section 02; re-score against the actual enclave design, structured access terms and threat picture before use. Legal and regulatory references identify areas requiring qualified specialist advice rather than resolving them. This document is not itself an assurance artefact and confers no capability judgement on any model.
+</footer>
+
+</div>
+</body>
+</html>
