@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Risk Model: Unguardrailed LLM Laboratory Environment</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Orbitron:wght@500;700;900&family=Fraunces:opsz,wght@9..144,400;9..144,600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#070b09;
+  --panel:#0d1310;
+  --panel2:#111a15;
+  --line:#1e2f26;
+  --grn:#38ff9c;
+  --grn-dim:#1d8f58;
+  --amb:#ffb000;
+  --red:#ff4d5e;
+  --org:#ff8a3d;
+  --txt:#c8d6ce;
+  --mut:#6f8a7c;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--bg);color:var(--txt);
+  font-family:'JetBrains Mono',ui-monospace,Consolas,monospace;
+  font-size:14px;line-height:1.6;
+  background-image:
+    linear-gradient(rgba(56,255,156,.025) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(56,255,156,.025) 1px,transparent 1px);
+  background-size:34px 34px;
+}
+.wrap{max-width:1220px;margin:0 auto;padding:28px 20px 90px}
+header.top{border:1px solid var(--line);background:linear-gradient(180deg,#0e1712,#0a0f0c);padding:26px 24px;position:relative;overflow:hidden}
+header.top:before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(56,255,156,.04) 0 1px,transparent 1px 3px);pointer-events:none}
+.eyebrow{font-family:'JetBrains Mono';font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--grn-dim)}
+h1{font-family:'Orbitron',sans-serif;font-weight:900;font-size:clamp(20px,3.4vw,34px);letter-spacing:.02em;color:var(--grn);margin:10px 0 6px;text-shadow:0 0 18px rgba(56,255,156,.25)}
+.sub{font-family:'Fraunces',serif;font-size:16px;color:var(--txt);max-width:70ch}
+.docctl{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);margin-top:22px}
+.docctl div{background:var(--panel);padding:9px 12px;font-size:11.5px}
+.docctl span{display:block;color:var(--mut);font-size:10px;letter-spacing:.16em;text-transform:uppercase}
+h2{font-family:'Orbitron',sans-serif;font-size:16px;letter-spacing:.12em;text-transform:uppercase;color:var(--amb);
+  margin:46px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+h2 .n{color:var(--grn-dim);margin-right:12px;font-weight:500}
+h3{font-family:'Orbitron',sans-serif;font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--grn);margin:26px 0 8px}
+p{max-width:100ch}
+a{color:var(--grn)}
+.panel{border:1px solid var(--line);background:var(--panel);padding:16px 18px;margin:14px 0}
+.panel.amber{border-left:3px solid var(--amb)}
+.panel.red{border-left:3px solid var(--red)}
+.panel.grn{border-left:3px solid var(--grn)}
+.thesis{font-family:'Fraunces',serif;font-size:17px;line-height:1.7;color:#e3f0e8}
+table{width:100%;border-collapse:collapse;margin:12px 0 26px;font-size:12px}
+th{background:var(--panel2);color:var(--grn);text-align:left;font-weight:700;font-size:10.5px;
+  letter-spacing:.14em;text-transform:uppercase;padding:8px 9px;border:1px solid var(--line);vertical-align:bottom}
+td{border:1px solid var(--line);padding:8px 9px;vertical-align:top;background:var(--panel)}
+tr:nth-child(even) td{background:#0a110d}
+td.id{font-weight:700;color:var(--amb);white-space:nowrap}
+.iso{color:var(--grn-dim);font-size:11px;letter-spacing:.02em}
+.sc{text-align:center;font-weight:700;white-space:nowrap}
+.b-low{color:#7ddc9e}.b-mod{color:#d8e37a}.b-high{color:var(--amb)}.b-sev{color:var(--org)}.b-crit{color:var(--red)}
+.chip{display:inline-block;border:1px solid var(--line);padding:1px 7px;font-size:10.5px;letter-spacing:.08em;color:var(--mut);margin:2px 4px 2px 0}
+.chip.g{border-color:var(--grn-dim);color:var(--grn)}
+.chip.a{border-color:#5a4310;color:var(--amb)}
+.chip.r{border-color:#5a1a22;color:var(--red)}
+ul{padding-left:18px;max-width:100ch}li{margin:5px 0}
+.matrix{border-collapse:collapse;width:auto;font-size:11px}
+.matrix td,.matrix th{width:64px;text-align:center;padding:7px 4px}
+.m1{background:#10231a!important;color:#7ddc9e}
+.m2{background:#1c2a12!important;color:#d8e37a}
+.m3{background:#2a2410!important;color:var(--amb)}
+.m4{background:#33190c!important;color:var(--org)}
+.m5{background:#33101a!important;color:var(--red)}
+.toc{columns:2;column-gap:34px;font-size:12.5px}
+.toc a{display:block;text-decoration:none;color:var(--txt);padding:3px 0;border-bottom:1px dotted #16241d}
+.toc a:hover{color:var(--grn)}
+.toc a b{color:var(--grn-dim);margin-right:9px}
+footer{margin-top:60px;border-top:1px solid var(--line);padding-top:16px;color:var(--mut);font-size:11px}
+.scroller{overflow-x:auto;border:1px solid var(--line);border-left:0;border-right:0}
+.scroller table{margin:0}
+@media(max-width:820px){.toc{columns:1}body{font-size:13px}}
+@media print{body{background:#fff;color:#000}td,th{background:#fff!important;color:#000!important;border-color:#999}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div class="eyebrow">Information Security Risk Assessment // Internal</div>
+  <h1>Unguardrailed LLM Laboratory</h1>
+  <div class="sub">A lifecycle risk model for operating locally hosted large language models, including alignment-stripped and agentic configurations, in a research laboratory. Controls mapped to ISO/IEC 27001:2022 Annex A and ISO/IEC 27002:2022.</div>
+  <div class="docctl">
+    <div><span>Classification</span>Internal / Restricted</div>
+    <div><span>Framework</span>ISO/IEC 27001:2022 + 27002:2022</div>
+    <div><span>Adjacent standards</span>ISO/IEC 42001, 23894, NIST AI RMF</div>
+    <div><span>Scoring</span>5&times;5 qualitative, inherent &rarr; residual</div>
+    <div><span>Scenarios</span>51 across 10 lifecycle phases</div>
+    <div><span>Review cadence</span>Quarterly, or on material change</div>
+  </div>
+</header>
+
+<h2><span class="n">00</span>Contents</h2>
+<nav class="toc">
+  <a href="#premise"><b>01</b>Premise and scope</a>
+  <a href="#appetite"><b>02</b>Risk appetite</a>
+  <a href="#method"><b>03</b>Scoring method</a>
+  <a href="#lifecycle"><b>04</b>Lifecycle model</a>
+  <a href="#gov"><b>05</b>Phase 1 &mdash; Governance</a>
+  <a href="#sup"><b>06</b>Phase 2 &mdash; Supply chain</a>
+  <a href="#inf"><b>07</b>Phase 3 &mdash; Infrastructure</a>
+  <a href="#dat"><b>08</b>Phase 4 &mdash; Data</a>
+  <a href="#adp"><b>09</b>Phase 5 &mdash; Model adaptation</a>
+  <a href="#run"><b>10</b>Phase 6 &mdash; Runtime</a>
+  <a href="#agt"><b>11</b>Phase 7 &mdash; Agentic operation</a>
+  <a href="#mon"><b>12</b>Phase 8 &mdash; Monitoring and IR</a>
+  <a href="#hum"><b>13</b>Phase 9 &mdash; Human factors</a>
+  <a href="#eol"><b>14</b>Phase 10 &mdash; Egress and disposal</a>
+  <a href="#controls"><b>15</b>Control statements</a>
+  <a href="#residual"><b>16</b>Residual risk view</a>
+  <a href="#irreducible"><b>17</b>Irreducible risk and acceptance</a>
+  <a href="#legal"><b>18</b>Legal and regulatory annex</a>
+  <a href="#gaps"><b>19</b>Where ISO 27001 runs out</a>
+</nav>
+
+<h2 id="premise"><span class="n">01</span>Premise and scope</h2>
+<div class="panel grn">
+<p class="thesis">"Zero guardrails" is a statement about the model, not about the system. Removing refusal behaviour from a set of weights does not remove the requirement to control what those weights can reach, what reaches them, what leaves the room, and who is accountable. The guardrail does not disappear; it relocates from the model to the perimeter, the tool boundary, the egress path and the paperwork. A laboratory that accepts unconstrained model behaviour must compensate with materially stronger containment, monitoring, and legal cover than one running a filtered commercial endpoint.</p>
+</div>
+
+<h3>In scope</h3>
+<ul>
+<li>Locally hosted open-weight inference (llama.cpp, Ollama, vLLM, TGI, LM Studio and equivalents) on operator-owned GPU hardware.</li>
+<li>Models with alignment training removed, bypassed, or never applied, including abliterated and uncensored community derivatives.</li>
+<li>Agentic frameworks granting the model tool access: shell, filesystem, HTTP, code execution, credential stores.</li>
+<li>Retrieval augmentation over operator-supplied corpora, including security research material.</li>
+<li>Local fine-tuning, LoRA adaptation and quantisation workflows.</li>
+<li>The full asset lifecycle: acquisition, build, operate, publish, decommission.</li>
+</ul>
+
+<h3>Out of scope</h3>
+<ul>
+<li>Third-party hosted commercial model APIs (covered separately under supplier controls A.5.19&ndash;A.5.23).</li>
+<li>Production or client-facing AI services. This model assumes a research environment with no external consumers.</li>
+</ul>
+
+<h3>Assumed architecture baseline</h3>
+<p>Single-tenant laboratory, one or more GPU hosts, hypervisor or container runtime with GPU passthrough, local vector store, web UI and API endpoints, sited in a domestic or small-office premises with a shared internet connection. Operated by one or a small number of security practitioners who also handle client-confidential material on adjacent systems. This adjacency is the single most consequential architectural fact in the model.</p>
+
+<h2 id="appetite"><span class="n">02</span>Risk appetite statement</h2>
+<div class="scroller"><table>
+<tr><th style="width:32%">Risk category</th><th style="width:16%">Appetite</th><th>Position</th></tr>
+<tr><td>Model output content (offensiveness, refusal absence, harmful text)</td><td class="sc b-low">HIGH</td><td>Accepted by design. Studying unconstrained behaviour is the purpose of the environment. No content filtering is applied at the model layer.</td></tr>
+<tr><td>Research quality and reproducibility</td><td class="sc b-mod">MODERATE</td><td>Some experimental failure is expected. Findings that leave the lab must be verified by a human against primary sources.</td></tr>
+<tr><td>Containment failure (egress, lateral movement, host compromise)</td><td class="sc b-crit">NONE</td><td>Zero tolerance. Any breakout from the lab boundary is a reportable incident.</td></tr>
+<tr><td>Impact on third parties (scanning, exploitation, data exposure)</td><td class="sc b-crit">NONE</td><td>Zero tolerance. No lab-originated traffic may reach systems the operator does not own or have written authorisation to test.</td></tr>
+<tr><td>Client and personal data exposure</td><td class="sc b-crit">NONE</td><td>Zero tolerance. Client material does not enter the lab without documented authorisation and a defined destruction point.</td></tr>
+<tr><td>Legal and regulatory breach</td><td class="sc b-crit">NONE</td><td>Zero tolerance. Certain generated content categories carry strict liability and are prohibited outright regardless of research intent.</td></tr>
+<tr><td>Availability of the lab itself</td><td class="sc b-low">HIGH</td><td>Non-critical. Loss of the environment is an inconvenience, not an incident.</td></tr>
+</table></div>
+<div class="panel amber"><strong>Interpretation.</strong> The appetite profile is deliberately asymmetric. High tolerance for what the model <em>says</em>; no tolerance for what the system <em>does</em>. Every control in this model exists to enforce that asymmetry.</div>
+
+<h2 id="method"><span class="n">03</span>Scoring method</h2>
+<p>Standard 5&times;5 qualitative assessment. Inherent risk assumes the stated scenario with no laboratory-specific controls applied. Residual risk assumes the mapped controls are implemented and operating effectively. Score = Likelihood &times; Impact.</p>
+
+<div style="display:flex;gap:34px;flex-wrap:wrap;align-items:flex-start">
+<div>
+<h3>Likelihood</h3>
+<table style="font-size:11.5px">
+<tr><th>L</th><th>Descriptor</th><th>Guide</th></tr>
+<tr><td class="sc">1</td><td>Rare</td><td>Not expected in the lab's lifetime</td></tr>
+<tr><td class="sc">2</td><td>Unlikely</td><td>Possible, no known precedent locally</td></tr>
+<tr><td class="sc">3</td><td>Possible</td><td>Plausible within 12 months</td></tr>
+<tr><td class="sc">4</td><td>Likely</td><td>Expected within 12 months</td></tr>
+<tr><td class="sc">5</td><td>Almost certain</td><td>Occurring now or on every cycle</td></tr>
+</table>
+</div>
+<div>
+<h3>Impact</h3>
+<table style="font-size:11.5px">
+<tr><th>I</th><th>Descriptor</th><th>Guide</th></tr>
+<tr><td class="sc">1</td><td>Negligible</td><td>Local nuisance, self-correcting</td></tr>
+<tr><td class="sc">2</td><td>Minor</td><td>Lost research time, rebuild required</td></tr>
+<tr><td class="sc">3</td><td>Moderate</td><td>Flawed output, minor cost, embarrassment</td></tr>
+<tr><td class="sc">4</td><td>Major</td><td>Client notification, regulatory interest, material loss</td></tr>
+<tr><td class="sc">5</td><td>Severe</td><td>Third-party harm, criminal exposure, business-ending reputational damage</td></tr>
+</table>
+</div>
+<div>
+<h3>Heat bands</h3>
+<table class="matrix">
+<tr><th>L\I</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th></tr>
+<tr><th>5</th><td class="m2">5</td><td class="m3">10</td><td class="m4">15</td><td class="m5">20</td><td class="m5">25</td></tr>
+<tr><th>4</th><td class="m1">4</td><td class="m2">8</td><td class="m3">12</td><td class="m5">16</td><td class="m5">20</td></tr>
+<tr><th>3</th><td class="m1">3</td><td class="m2">6</td><td class="m3">9</td><td class="m3">12</td><td class="m4">15</td></tr>
+<tr><th>2</th><td class="m1">2</td><td class="m1">4</td><td class="m2">6</td><td class="m2">8</td><td class="m3">10</td></tr>
+<tr><th>1</th><td class="m1">1</td><td class="m1">2</td><td class="m1">3</td><td class="m2">4</td><td class="m2">5</td></tr>
+</table>
+<p style="font-size:11px;color:var(--mut);max-width:34ch">1&ndash;4 Low &middot; 5&ndash;9 Moderate &middot; 10&ndash;14 High &middot; 15&ndash;19 Severe &middot; 20&ndash;25 Critical</p>
+</div>
+</div>
+
+<h2 id="lifecycle"><span class="n">04</span>Lifecycle model</h2>
+<p>Risk is decomposed across ten phases. Phases 1 and 9 are continuous; the remainder are broadly sequential but iterate.</p>
+<div class="panel">
+<span class="chip g">1 &middot; Governance and authorisation</span>
+<span class="chip">2 &middot; Supply chain and acquisition</span>
+<span class="chip">3 &middot; Environment and infrastructure</span>
+<span class="chip">4 &middot; Data ingestion and preparation</span>
+<span class="chip">5 &middot; Model adaptation</span>
+<span class="chip a">6 &middot; Runtime and interaction</span>
+<span class="chip r">7 &middot; Agentic operation</span>
+<span class="chip">8 &middot; Monitoring and incident response</span>
+<span class="chip g">9 &middot; Human factors</span>
+<span class="chip">10 &middot; Egress, publication and disposal</span>
+</div>
+
+<!-- ============ PHASE 1 ============ -->
+<h2 id="gov"><span class="n">05</span>Phase 1 &mdash; Governance and authorisation</h2>
+<div class="scroller"><table>
+<tr><th style="width:74px">ID</th><th style="width:26%">Risk scenario</th><th style="width:44px">L</th><th style="width:44px">I</th><th style="width:52px">Inh</th><th>Countermeasures and control statements</th><th style="width:16%">ISO 27002:2022</th><th style="width:52px">Res</th></tr>
+
+<tr><td class="id">GOV-01</td><td>No documented purpose, authorisation or boundary for the lab. Activity drifts into work that was never sanctioned and cannot be defended after the fact.</td><td class="sc">4</td><td class="sc">4</td><td class="sc b-crit">16</td><td>A written Laboratory Authorisation and Acceptable Use standard defines permitted research categories, prohibited categories, the physical and logical boundary, and the named accountable owner. Reviewed annually and on scope change. Every experiment references an authorisation ID.</td><td class="iso">5.1, 5.2, 5.8, 5.10, 5.37</td><td class="sc b-mod">6</td></tr>
+
+<tr><td class="id">GOV-02</td><td>No inventory of models, adapters, datasets, agents, prompts or tool definitions. The organisation cannot state what it holds or what produced a given output.</td><td class="sc">4</td><td class="sc">3</td><td class="sc b-high">12</td><td>Asset register covers model artefacts (name, source URI, revision hash, licence, format, quantisation), datasets, adapters, agent configurations and tool manifests. Each artefact carries a classification and a retention decision at registration. Register is the authoritative source for decommissioning.</td><td class="iso">5.9, 5.12, 5.13, 8.9</td><td class="sc b-mod">6</td></tr>
+
+<tr><td class="id">GOV-03</td><td>Lab is treated as a personal hobby environment, so ISMS scope, client contractual handling terms and supplier obligations are never applied to it.</td><td class="sc">4</td><td class="sc">4</td><td class="sc b-crit">16</td><td>Lab is formally brought inside the ISMS scope statement. A scope decision record documents which client contracts and NDAs constrain lab use. Where a contract prohibits AI processing of engagement data, that prohibition is enforced technically, not by intention.</td><td class="iso">5.1, 5.19&ndash;5.22, 5.31, 6.2, 6.6</td><td class="sc b-mod">8</td></tr>
+
+<tr><td class="id">GOV-04</td><td>Risk appetite undefined. The decision to run alignment-stripped models is never formally accepted by an accountable person, leaving no defensible record of the trade-off.</td><td class="sc">4</td><td class="sc">3</td><td class="sc b-high">12</td><td>A signed risk acceptance records the deliberate choice to remove model-layer guardrails, the compensating controls relied upon, the expiry date of the acceptance, and the conditions that would trigger reassessment.</td><td class="iso">5.1, 5.35, 5.36, 6.4</td><td class="sc b-low">4</td></tr>
+
+<tr><td class="id">GOV-05</td><td>Sole operator with no independent challenge. Design flaws, control gaps and biased conclusions persist unexamined.</td><td class="sc">4</td><td class="sc">3</td><td class="sc b-high">12</td><td>Scheduled independent review of the lab configuration and its risk model by a competent second party at least annually. Peer review gate on any output intended for publication or client consumption.</td><td class="iso">5.35, 5.36, 6.3, 8.29</td><td class="sc b-mod">6</td></tr>
+
+<tr><td class="id">GOV-06</td><td>Professional indemnity or cyber insurance cover invalidated because AI research activity was never declared to the insurer.</td><td class="sc">3</td><td class="sc">4</td><td class="sc b-high">12</td><td>Insurance position reviewed and lab activity disclosed in writing at renewal. Any exclusion for AI-assisted deliverables is recorded on the risk register and reflected in client engagement terms.</td><td class="iso">5.31, 5.19, 5.29</td><td class="sc b-mod">6</td></tr>
+
+<tr><td class="id">GOV-07</td><td>Change to lab configuration (new model, new tool, new network path) is made ad hoc with no assessment, silently invalidating the risk position.</td><td class="sc">4</td><td class="sc">3</td><td class="sc b-high">12</td><td>Lightweight change record required for any change to the model set, tool set, network policy or data classification handled. Changes affecting egress or tool privilege require re-approval against the authorisation standard.</td><td class="iso">8.32, 8.9, 5.8, 5.37</td><td class="sc b-mod">6</td></tr>
+</table></div>
+
+<!-- ============ PHASE 2 ============ -->
+<h2 id="sup"><span class="n">06</span>Phase 2 &mdash; Supply chain and acquisition</h2>
+<div class="scroller"><table>
+<tr><th style="width:74px">ID</th><th style="width:26%">Risk scenario</th><th style="width:44px">L</th><th style="width:44px">I</th><th style="width:52px">Inh</th><th>Countermeasures and control statements</th><th style="width:16%">ISO 27002:2022</th><th style="width:52px">Res</th></tr>
+
+<tr><td class="id">SUP-01</td><td>Malicious serialised model weights achieve code execution on load. Python pickle-based formats deserialise arbitrary objects; loading is equivalent to running untrusted code as the inference user.</td><td class="sc">4</td><td class="sc">5</td><td class="sc b-crit">20</td><td>Safetensors or GGUF formats mandated; pickle-based formats prohibited unless there is no alternative. Where unavoidable, first load occurs in a disposable, network-isolated container with no host mounts and no credentials. Static scanning of archives before load. Publisher and revision hash recorded and verified against the register.</td><td class="iso">8.7, 8.8, 8.19, 8.25, 8.22, 5.21, 5.23</td><td class="sc b-mod">8</td></tr>
+
+<tr><td class="id">SUP-02</td><td>Weights carry a trigger-conditioned backdoor. Behaviour is benign under evaluation and changes on a specific token, date or context. Static analysis cannot detect this.</td><td class="sc">3</td><td class="sc">4</td><td class="sc b-high">12</td><td>Source restricted to publishers with a verifiable identity and track record. Behavioural evaluation battery run before promotion to research use. Containment is treated as the primary control: the model is assumed potentially adversarial and is denied unmediated egress and tool privilege regardless of evaluation results.</td><td class="iso">5.7, 5.21, 5.22, 8.16, 8.22, 8.29</td><td class="sc b-high">12</td></tr>
+
+<tr><td class="id">SUP-03</td><td>Typosquatted or impersonated publisher on a model hub delivers a substituted artefact.</td><td class="sc">3</td><td class="sc">4</td><td class="sc b-high">12</td><td>Acquisition procedure requires verification of publisher organisation, pinning to an immutable revision identifier rather than a mutable tag, and recording the artefact digest at download. Digest re-verified before each promotion between environments.</td><td class="iso">5.20, 5.21, 8.9, 8.24</td><td class="sc b-mod">6</td></tr>
+
+<tr><td class="id">SUP-04</td><td>Compromised or vulnerable inference dependency in the Python, Node, CUDA or container stack provides initial access.</td><td class="sc">4</td><td class="sc">4</td><td class="sc b-crit">16</td><td>Dependency manifests pinned and hash-locked. Software bill of materials maintained for each lab image. Vulnerability feed monitored for the inference runtime and GPU stack specifically. Patch service level defined; images rebuilt rather than patched in place.</td><td class="iso">8.8, 8.9, 8.19, 8.32, 5.7, 5.21</td><td class="sc b-mod">8</td></tr>
+
+<tr><td class="id">SUP-05</td><td>Model licence or acceptable use policy breached. An alignment-stripped derivative of a restrictively licensed base model is used to produce commercial client deliverables.</td><td class="sc">4</td><td class="sc">3</td><td class="sc b-high">12</td><td>Licence recorded at registration and enforced by classification. Models with non-commercial or research-only terms are tagged and technically separated from any workflow that touches client deliverables. Derivative and redistribution obligations reviewed before any artefact is shared.</td><td class="iso">5.32, 5.31, 5.9, 5.12</td><td class="sc b-mod">6</td></tr>
+
+<tr><td class="id">SUP-06</td><td>Memory-safety defect in a model file parser is exploited by a crafted artefact, giving execution in the inference process.</td><td class="sc">3</td><td class="sc">4</td><td class="sc b-high">12</td><td>Inference process runs unprivileged, in a namespace-isolated container, with a restricted syscall profile and no write access outside a scratch volume. Parser versions tracked in the vulnerability programme. Untrusted artefacts loaded only in the disposable evaluation enclave.</td><td class="iso">8.8, 8.22, 8.27, 8.31, 8.2</td><td class="sc b-mod">6</td></tr>
+
+<tr><td class="id">SUP-07</td><td>Weights or tooling sourced from an entity or jurisdiction subject to sanctions or export control, creating a compliance breach on acquisition or onward transfer.</td><td class="sc">2</td><td class="sc">4</td><td class="sc b-mod">8</td><td>Provenance check at acquisition against sanctions and export control obligations. Onward transfer of any derivative artefact requires an explicit export assessment recorded against the asset register entry.</td><td class="iso">5.31, 5.20, 5.14, 5.9</td><td class="sc b-low">4</td></tr>
+
+<tr><td class="id">SUP-08</td><td>Model card, benchmark claims or capability description materially misrepresent the artefact, leading to unsafe deployment assumptions.</td><td class="sc">4</td><td class="sc">2</td><td class="sc b-mod">8</td><td>Independent capability and refusal-boundary evaluation performed locally before use. Published claims treated as marketing until verified. Evaluation results attached to the register entry.</td><td class="iso">5.21, 8.29, 8.33, 5.35</td><td class="sc b-low">4</td></tr>
+</table></div>
+
+<!-- ============ PHASE 3 ============ -->
+<h2 id="inf"><span class="n">07</span>Phase 3 &mdash; Environment and infrastructure</h2>
+<div class="scroller"><table>
+<tr><th style="width:74px">ID</th><th style="width:26%">Risk scenario</th><th style="width:44px">L</th><th style="width:44px">I</th><th style="width:52px">Inh</th><th>Countermeasures and control statements</th><th style="width:16%">ISO 27002:2022</th><th style="width:52px">Res</th></tr>
+
+<tr><td class="id">INF-01</td><td>Inference API or web UI bound to all interfaces with no authentication and reachable from the wider network or the internet. Default configurations of common inference servers listen without credentials and are routinely enumerated at internet scale.</td><td class="sc">5</td><td class="sc">4</td><td class="sc b-crit">20</td><td>All inference and UI services bind to loopback or a dedicated management interface only. Access mediated by an authenticating reverse proxy with strong authentication. No port forwarding or UPnP from the perimeter. External attack surface verified from an off-network vantage point after every change, not assumed.</td><td class="iso">8.3, 8.5, 8.9, 8.20, 8.21, 8.22</td><td class="sc b-mod">8</td></tr>
+
+<tr><td class="id">INF-02</td><td>Lab shares a flat network with home or business systems holding client and personal data. Compromise of a GPU host pivots directly to material the operator is contractually obliged to protect.</td><td class="sc">4</td><td class="sc">5</td><td class="sc b-crit">20</td><td>Dedicated network segment with default-deny in both directions. No east-west path from lab to trusted segments. Separate DNS and no shared directory service, credential store or file share. Management access is one-way, initiated from the trusted side via a jump host, never the reverse.</td><td class="iso">8.20, 8.22, 8.2, 5.15, 8.1</td><td class="sc b-mod">8</td></tr>
+
+<tr><td class="id">INF-03</td><td>Container or hypervisor escape from an inference workload with GPU passthrough. Accelerator passthrough widens the guest-to-host attack surface beyond a standard VM.</td><td class="sc">2</td><td class="sc">5</td><td class="sc b-high">10</td><td>Host runs no other function. Guest is unprivileged with a minimal device surface. Hypervisor and GPU driver stack patched on a defined cycle. Host has no credentials for, and no route to, any trusted segment, so an escape yields an isolated host rather than a foothold.</td><td class="iso">8.8, 8.22, 8.27, 8.31, 7.8</td><td class="sc b-mod">6</td></tr>
+
+<tr><td class="id">INF-04</td><td>GPU host hijacked for cryptomining or unauthorised third-party model hosting. High-value accelerators are an explicit targeting objective.</td><td class="sc">3</td><td class="sc">3</td><td class="sc b-mod">9</td><td>Baseline GPU utilisation, power draw and thermal profile established. Alerting on sustained deviation outside scheduled workloads. Endpoint protection and egress monitoring on the host. Scheduled review of running processes and container inventory.</td><td class="iso">8.6, 8.7, 8.16, 8.19</td><td class="sc b-low">4</td></tr>
+
+<tr><td class="id">INF-05</td><td>Remote access left exposed. A convenience tunnel, remote desktop service or SSH endpoint stood up for a single experiment is never torn down.</td><td class="sc">4</td><td class="sc">5</td><td class="sc b-crit">20</td><td>Remote access exclusively via the sanctioned VPN with phishing-resistant multi-factor authentication. Ad hoc tunnelling utilities prohibited on lab hosts and blocked at egress. Temporary access provisioned with an expiry and reconciled weekly against an external surface scan.</td><td class="iso">6.7, 8.5, 8.20, 8.21, 8.16, 8.19</td><td class="sc b-mod">8</td></tr>
+
+<tr><td class="id">INF-06</td><td>Physical theft of high-value accelerators or storage containing models, logs and research data.</td><td class="sc">2</td><td class="sc">4</td><td class="sc b-mod">8</td><td>Equipment sited in a lockable area with controlled entry. Full disk encryption on all lab storage with keys not resident on the device. Asset serial numbers recorded. Loss triggers the incident procedure including assessment of any client data resident at the time.</td><td class="iso">7.1&ndash;7.4, 7.8, 7.9, 8.24, 5.24</td><td class="sc b-low">4</td></tr>
+
+<tr><td class="id">INF-07</td><td>Thermal, electrical or fire risk from sustained multi-GPU load in a domestic setting. Server-class passively cooled accelerators repurposed into consumer chassis, combined with marginal power supply headroom and shared ring-main circuits, is a physical safety issue, not just an availability one.</td><td class="sc">3</td><td class="sc">5</td><td class="sc b-sev">15</td><td>Documented thermal and power design with measured headroom under sustained full load. Active cooling verified for passively cooled cards. Circuit loading assessed against the supply. Interlinked smoke detection covering the equipment location. No unattended long-duration runs without automated thermal shutdown thresholds and remote power isolation.</td><td class="iso">7.5, 7.8, 7.11, 7.12, 7.13, 5.29</td><td class="sc b-mod">8</td></tr>
+
+<tr><td class="id">INF-08</td><td>Capacity exhaustion. Model artefacts and checkpoints consume storage until the host destabilises and research data is lost.</td><td class="sc">4</td><td class="sc">2</td><td class="sc b-mod">8</td><td>Storage and VRAM capacity monitored with thresholds. Artefact retention enforced from the register. Research outputs backed up independently of the working volume.</td><td class="iso">8.6, 8.13, 8.16</td><td class="sc b-low">4</td></tr>
+
+<tr><td class="id">INF-09</td><td>Unpatched supporting infrastructure in the lab estate: hypervisor management interface, storage appliance, router, IPMI or BMC.</td><td class="sc">4</td><td class="sc">4</td><td class="sc b-crit">16</td><td>Full asset coverage in the vulnerability management programme, explicitly including management planes. Out-of-band management interfaces isolated to a dedicated segment with no internet route. Default credentials eliminated at build.</td><td class="iso">8.8, 8.9, 8.20, 8.22, 5.17</td><td class="sc b-mod">8</td></tr>
+
+<tr><td class="id">INF-10</td><td>Lab data backed up to consumer cloud storage with no encryption, no contract and no processing terms.</td><td class="sc">3</td><td class="sc">4</td><td class="sc b-high">12</td><td>Backup destinations approved and recorded. Client-encrypted before transfer with keys held outside the provider. Where the backup may contain personal data, provider terms assessed against data protection obligations before use.</td><td class="iso">8.13, 8.24, 5.23, 5.34, 5.14</td><td class="sc b-mod">6</td></tr>
+</table></div>
+
+<!-- ============ PHASE 4 ============ -->
+<h2 id="dat"><span class="n">08</span>Phase 4 &mdash; Data ingestion and preparation</h2>
+<div class="scroller"><table>
+<tr><th style="width:74px">ID</th><th style="width:26%">Risk scenario</th><th style="width:44px">L</th><th style="width:44px">I</th><th style="width:52px">Inh</th><th>Countermeasures and control statements</th><th style="width:16%">ISO 27002:2022</th><th style="width:52px">Res</th></tr>
+
+<tr><td class="id">DAT-01</td><td>Client-confidential material (test evidence, incident artefacts, source-restricted intelligence) is ingested for retrieval or fine-tuning, breaching contractual handling terms and non-disclosure obligations.</td><td class="sc">4</td><td class="sc">5</td><td class="sc b-crit">20</td><td>Default position is that no client data enters the lab. Exceptions require written client authorisation naming the environment, the purpose, the retention period and the destruction method. Classification labels enforced at the ingestion boundary. Data loss prevention on transfer paths into the lab segment. Sanitised or synthetic substitutes used wherever the research question permits.</td><td class="iso">5.12, 5.13, 5.14, 5.34, 6.6, 8.3, 8.11, 8.12</td><td class="sc b-high">10</td></tr>
+
+<tr><td class="id">DAT-02</td><td>Personal data processed with no lawful basis, no impact assessment and no minimisation. Model training and retrieval are high-risk processing under data protection law.</td><td class="sc">4</td><td class="sc">4</td><td class="sc b-crit">16</td><td>Data protection impact assessment completed for the lab as a processing environment and refreshed on material change. Lawful basis and minimisation documented per dataset. Special category data prohibited unless a specific assessed exception applies. Records of processing updated to include the lab.</td><td class="iso">5.34, 5.31, 5.33, 8.10, 8.11</td><td class="sc b-mod">8</td></tr>
+
+<tr><td class="id">DAT-03</td><td>Cross-contamination between engagements via a shared vector store, shared conversation history or shared adapter, so material from one client surfaces in work for another.</td><td class="sc">3</td><td class="sc">5</td><td class="sc b-sev">15</td><td>One retrieval index and one storage namespace per engagement, never shared. Namespace destroyed at engagement close, with destruction evidenced. Access restricted per namespace. Adapters trained on engagement data are treated as carrying that data's classification.</td><td class="iso">8.3, 8.10, 8.31, 5.12, 5.33</td><td class="sc b-mod">8</td></tr>
+
+<tr><td class="id">DAT-04</td><td>Live malicious content ingested into a retrieval corpus detonates in the parsing chain rather than in the model. Document parsers, archive extractors and image libraries are the execution surface, and security research corpora are exactly where such content lives.</td><td class="sc">4</td><td class="sc">5</td><td class="sc b-crit">20</td><td>All ingestion parsing occurs in a dedicated, network-isolated, ephemeral sandbox distinct from the inference host. Output of parsing is text only, with active content stripped. Archive extraction bounded for depth, ratio and size. Malware analysis material handled under the separate malware handling procedure and never ingested directly.</td><td class="iso">8.7, 8.22, 8.27, 8.31, 8.19</td><td class="sc b-mod">8</td></tr>
+
+<tr><td class="id">DAT-05</td><td>Corpus poisoning. Attacker-controlled or opportunistically scraped content plants instructions that alter downstream model behaviour, or shifts a fine-tune's behaviour in a way that is not visible at evaluation time.</td><td class="sc">4</td><td class="sc">4</td><td class="sc b-crit">16</td><td>Corpus provenance recorded per source with a trust rating. Untrusted scraped content is segregated into a distinct index and never mixed with trusted sources. Content integrity checked at ingestion. Retrieved content is treated as untrusted data at inference time, never as instruction.</td><td class="iso">5.7, 8.29, 8.33, 8.16, 5.12</td><td class="sc b-high">10</td></tr>
+
+<tr><td class="id">DAT-06</td><td>Sensitive data persists beyond intent in conversation history, embeddings, cached key-value state, swap files, temporary directories and application logs.</td><td class="sc">4</td><td class="sc">4</td><td class="sc b-crit">16</td><td>Retention defined per data store including caches and history. Automated purge on schedule and at engagement close. Swap disabled or encrypted on inference hosts. Deletion verified rather than assumed, with evidence retained against the register entry.</td><td class="iso">8.10, 8.24, 8.15, 5.33, 5.12</td><td class="sc b-mod">8</td></tr>
+
+<tr><td class="id">DAT-07</td><td>Copyright or licence-restricted corpora used in a derivative work that is then published or delivered commercially.</td><td class="sc">3</td><td class="sc">3</td><td class="sc b-mod">9</td><td>Source licence recorded per corpus. Publication gate checks the licence position of every contributing source. Rights-restricted material excluded from any corpus feeding deliverable production.</td><td class="iso">5.32, 5.31, 5.9</td><td class="sc b-low">4</td></tr>
+
+<tr><td class="id">DAT-08</td><td>Embedding inversion or membership inference recovers source text from a vector store that was assumed to be an opaque numerical artefact.</td><td class="sc">2</td><td class="sc">4</td><td class="sc b-mod">8</td><td>Vector stores classified at the same level as their source corpus, not lower. Encrypted at rest, access-controlled, and never shared or published on the assumption that embeddings are non-sensitive.</td><td class="iso">5.12, 8.3, 8.24, 5.14</td><td class="sc b-low">4</td></tr>
+</table></div>
+
+<!-- ============ PHASE 5 ============ -->
+<h2 id="adp"><span class="n">09</span>Phase 5 &mdash; Model adaptation and alignment modification</h2>
+<div class="scroller"><table>
+<tr><th style="width:74px">ID</th><th style="width:26%">Risk scenario</th><th style="width:44px">L</th><th style="width:44px">I</th><th style="width:52px">Inh</th><th>Countermeasures and control statements</th><th style="width:16%">ISO 27002:2022</th><th style="width:52px">Res</th></tr>
+
+<tr><td class="id">ADP-01</td><td>Deliberate alignment removal produces an artefact with meaningful uplift for harmful tasks. The artefact leaks, is shared, or is redistributed, and the lab becomes the origin of a capability now in circulation.</td><td class="sc">3</td><td class="sc">5</td><td class="sc b-sev">15</td><td>Alignment-modified artefacts are classified at the highest internal level and marked non-transferable. Stored encrypted on the lab segment only, never on portable media, endpoints or cloud sync. Egress of model files blocked by policy and by data loss prevention. Any proposed external sharing requires documented senior approval and an assessment against the acceptable use standard. Destruction is mandatory at project close unless a retention decision is recorded.</td><td class="iso">5.10, 5.12, 5.13, 5.14, 8.3, 8.10, 8.12, 8.24, 6.6</td><td class="sc b-high">10</td></tr>
+
+<tr><td class="id">ADP-02</td><td>Fine-tuning causes memorisation. The model reproduces training material verbatim, including sensitive content the operator believed was abstracted away by the training process.</td><td class="sc">3</td><td class="sc">4</td><td class="sc b-high">12</td><td>Training data minimised and masked before use. Post-training extraction testing performed against known sensitive strings. Models trained on classified material inherit that classification permanently and are not promoted to lower-trust use.</td><td class="iso">8.11, 8.29, 8.33, 5.12</td><td class="sc b-mod">6</td></tr>
+
+<tr><td class="id">ADP-03</td><td>Adapter and checkpoint sprawl. No provenance chain linking an output back to the exact weights, adapter, quantisation, prompt and sampling parameters that produced it. Research is unreproducible and findings are indefensible.</td><td class="sc">4</td><td class="sc">3</td><td class="sc b-high">12</td><td>Every generated artefact records base model digest, adapter digest, quantisation, runtime version, system prompt and sampling parameters. Experiment records retained under the records control. Untracked checkpoints are deleted on discovery.</td><td class="iso">5.9, 5.33, 8.9, 8.32, 5.37</td><td class="sc b-mod">6</td></tr>
+
+<tr><td class="id">ADP-04</td><td>Adaptation silently degrades capability or introduces bias. Downstream research conclusions are wrong in a way that is not obvious.</td><td class="sc">3</td><td class="sc">3</td><td class="sc b-mod">9</td><td>Pre- and post-adaptation evaluation against a fixed held-out benchmark set. Regression threshold defined; artefacts failing the threshold are not promoted. Evaluation set held separately from training data.</td><td class="iso">8.29, 8.33, 8.32</td><td class="sc b-low">4</td></tr>
+
+<tr><td class="id">ADP-05</td><td>Unattended multi-day training run with no supervision of thermal state, integrity or completion.</td><td class="sc">3</td><td class="sc">3</td><td class="sc b-mod">9</td><td>Long-running jobs require automated monitoring with thermal and failure alerting to a channel the operator actually watches. Checkpointing enabled so a failure is a delay, not a loss. Remote power isolation available.</td><td class="iso">8.6, 8.16, 7.5, 5.29</td><td class="sc b-low">4</td></tr>
+</table></div>
+
+<!-- ============ PHASE 6 ============ -->
+<h2 id="run"><span class="n">10</span>Phase 6 &mdash; Runtime and interaction</h2>
+<div class="panel amber"><strong>Framing note.</strong> In a guardrailed deployment, jailbreak resistance is a control. Here it is absent by design, so it cannot be counted as one. Every scenario in this phase is assessed on the assumption that the model will comply with any instruction it receives, from any source, including instructions embedded in data it was merely asked to read.</div>
+<div class="scroller"><table>
+<tr><th style="width:74px">ID</th><th style="width:26%">Risk scenario</th><th style="width:44px">L</th><th style="width:44px">I</th><th style="width:52px">Inh</th><th>Countermeasures and control statements</th><th style="width:16%">ISO 27002:2022</th><th style="width:52px">Res</th></tr>
+
+<tr><td class="id">RUN-01</td><td>Direct prompt manipulation steers the model into behaviour outside the sanctioned research scope. There is no refusal boundary to fall back on.</td><td class="sc">5</td><td class="sc">3</td><td class="sc b-sev">15</td><td>Accepted at the model layer. Compensating controls are environmental: the model has no privileged tool access by default, no unmediated egress, and full session logging. Scope enforcement is procedural via the acceptable use standard and periodic log review, not technical refusal.</td><td class="iso">5.10, 8.15, 8.16, 8.20, 8.22, 6.3</td><td class="sc b-high">12</td></tr>
+
+<tr><td class="id">RUN-02</td><td>Indirect prompt injection. Instructions embedded in fetched web pages, documents, code comments, filenames or tool output are executed as though the operator had issued them.</td><td class="sc">5</td><td class="sc">5</td><td class="sc b-crit">25</td><td>Architectural separation of instruction and data channels. Retrieved and fetched content is delimited, marked as untrusted, and never granted authority. Web access restricted to an allowlist through a filtering proxy, or removed entirely for sessions handling untrusted corpora. Tool invocation triggered by content that entered from an untrusted channel requires human confirmation. Full tool-call logging with alerting on unexpected tool sequences.</td><td class="iso">8.20, 8.22, 8.23, 8.26, 8.27, 8.16, 5.7</td><td class="sc b-high">12</td></tr>
+
+<tr><td class="id">RUN-03</td><td>Insecure output handling. Model output is passed to a shell, an evaluation function, a database query or a browser render without validation, converting a text prediction into code execution or injection.</td><td class="sc">4</td><td class="sc">5</td><td class="sc b-crit">20</td><td>Model output is treated as untrusted input to every downstream consumer, with the same validation, encoding and parameterisation applied as to any external data. Automatic execution of generated code is prohibited outside an ephemeral, network-isolated sandbox. Rendered output is contextually encoded. Secure coding standards apply to all lab-built tooling.</td><td class="iso">8.25, 8.26, 8.27, 8.28, 8.29</td><td class="sc b-mod">8</td></tr>
+
+<tr><td class="id">RUN-04</td><td>Fabricated technical content reaches a client deliverable or a public publication. Plausible but invented indicators, CVE detail, attribution claims or code carry the operator's professional credibility behind them.</td><td class="sc">4</td><td class="sc">4</td><td class="sc b-crit">16</td><td>Mandatory human verification gate: no model-generated technical assertion leaves the lab without independent confirmation against a primary source. Provenance of AI assistance recorded internally and disclosed where client terms require. Attribution claims and indicators subject to a separate confidence-assessment procedure. Peer review before publication.</td><td class="iso">5.35, 5.36, 5.37, 6.3, 8.29, 5.31</td><td class="sc b-mod">8</td></tr>
+
+<tr><td class="id">RUN-05</td><td>Generation of material that is unlawful to create or possess. Multimodal capability plus zero refusal behaviour plus automatic caching means an offence can be committed and evidenced on disk without deliberate intent. Several relevant offences are strict liability, and research purpose is not a defence.</td><td class="sc">2</td><td class="sc">5</td><td class="sc b-high">10</td><td>Absolute prohibition, stated explicitly in the acceptable use standard and the risk acceptance, on prompting toward prohibited content categories. Multimodal generation capability disabled unless a specific authorised research need exists. Output caching and history disabled for any session with generative image capability. A written procedure defines immediate actions on inadvertent generation: isolate, do not distribute, do not attempt independent deletion of evidence, obtain legal advice, report. Awareness training covers the strict-liability position directly.</td><td class="iso">5.10, 5.31, 5.24, 5.28, 6.3, 8.10, 8.23</td><td class="sc b-high">10</td></tr>
+
+<tr><td class="id">RUN-06</td><td>Resource exhaustion through adversarial context length or recursive generation, denying the lab to legitimate use and driving thermal load.</td><td class="sc">3</td><td class="sc">2</td><td class="sc b-mod">6</td><td>Context length, token budget and concurrency limits enforced at the serving layer. Per-session quotas. Utilisation alerting.</td><td class="iso">8.6, 8.16, 8.21</td><td class="sc b-low">3</td></tr>
+
+<tr><td class="id">RUN-07</td><td>Credentials pasted into prompts. API keys, client credentials and connection strings entered for convenience persist in conversation history, cache and logs indefinitely.</td><td class="sc">4</td><td class="sc">4</td><td class="sc b-crit">16</td><td>Secrets are supplied to tooling through a secrets manager and environment injection, never through the conversation channel. Pattern-based detection on prompt input and stored history with alerting. History and log purge procedure on detection, followed by credential rotation as the primary remediation.</td><td class="iso">5.17, 8.12, 8.15, 8.24, 8.10, 6.3</td><td class="sc b-mod">8</td></tr>
+
+<tr><td class="id">RUN-08</td><td>Model extraction or inversion against an exposed or over-shared endpoint recovers a proprietary fine-tune or its training characteristics.</td><td class="sc">2</td><td class="sc">3</td><td class="sc b-mod">6</td><td>Endpoints authenticated and rate-limited. Access to adapted models restricted to named identities. Query volume monitored for extraction-shaped patterns.</td><td class="iso">8.3, 8.5, 8.16, 8.21</td><td class="sc b-low">3</td></tr>
+</table></div>
+
+<!-- ============ PHASE 7 ============ -->
+<h2 id="agt"><span class="n">11</span>Phase 7 &mdash; Agentic operation</h2>
+<div class="panel red"><strong>Highest-consequence phase.</strong> An unguardrailed model with tool access is not a text generator with a plugin; it is an unauthenticated remote code execution primitive that anyone able to influence its input can reach. This phase carries the model's only credible route to third-party harm and criminal liability, and it warrants the strictest controls in the document.</div>
+<div class="scroller"><table>
+<tr><th style="width:74px">ID</th><th style="width:26%">Risk scenario</th><th style="width:44px">L</th><th style="width:44px">I</th><th style="width:52px">Inh</th><th>Countermeasures and control statements</th><th style="width:16%">ISO 27002:2022</th><th style="width:52px">Res</th></tr>
+
+<tr><td class="id">AGT-01</td><td>Excessive agency. The agent holds shell, filesystem and network tools with no approval gate, so any injected instruction becomes host command execution under the agent's privileges.</td><td class="sc">4</td><td class="sc">5</td><td class="sc b-crit">20</td><td>Least-privilege tool design: each tool exposes the narrowest possible operation rather than a general-purpose shell. Agent runs as an unprivileged identity in an ephemeral container with no host mount and no credentials beyond the task. Human approval required for any state-changing, destructive or outbound action. Privileged utility programs removed from the agent image. Session-scoped, time-bounded tokens only.</td><td class="iso">8.2, 8.3, 8.18, 8.22, 8.27, 5.15, 5.17</td><td class="sc b-high">12</td></tr>
+
+<tr><td class="id">AGT-02</td><td>The agent initiates scanning, enumeration or exploitation against systems the operator has no authorisation to test, from the operator's own IP address. This is a criminal exposure under computer misuse legislation and a breach of connectivity terms, and intent is not a required element of the primary offence.</td><td class="sc">3</td><td class="sc">5</td><td class="sc b-sev">15</td><td>Default-deny egress at the lab boundary. No default route for agent workloads. Any external destination requires explicit allowlisting with a recorded justification and an expiry. Offensive tooling absent from the agent image entirely. Where external interaction is genuinely required for research, it targets operator-owned infrastructure or a documented, authorised range only. Egress logging retained and reviewed.</td><td class="iso">8.20, 8.22, 8.23, 8.16, 5.10, 5.31</td><td class="sc b-high">10</td></tr>
+
+<tr><td class="id">AGT-03</td><td>The agent exfiltrates lab or client data through a channel that was permitted for legitimate reasons: a webhook, a repository push, a paste service, a DNS lookup or an image request.</td><td class="sc">3</td><td class="sc">5</td><td class="sc b-sev">15</td><td>Egress allowlist covers destination and protocol, with DNS forced through a controlled resolver and logged. Outbound repository, messaging and paste destinations blocked by default. Data loss prevention on permitted paths. Volumetric and entropy alerting on outbound flows from lab hosts.</td><td class="iso">8.12, 8.20, 8.21, 8.23, 8.16, 5.14</td><td class="sc b-high">10</td></tr>
+
+<tr><td class="id">AGT-04</td><td>The agent harvests credentials available in its execution context: environment variables, key material, cloud tokens, browser credential stores, configuration files.</td><td class="sc">3</td><td class="sc">5</td><td class="sc b-sev">15</td><td>Agent execution context contains no credentials other than the minimum for the specific task, issued short-lived from a secrets manager. No user profile, browser data or key material present in the agent image. Filesystem access restricted to a task-scoped scratch volume. Credential use monitored for anomalous source or pattern.</td><td class="iso">5.17, 8.2, 8.3, 8.24, 8.16, 8.18</td><td class="sc b-mod">8</td></tr>
+
+<tr><td class="id">AGT-05</td><td>The agent establishes persistence or modifies its own configuration: scheduled tasks, service units, edits to its own system prompt or tool manifest.</td><td class="sc">3</td><td class="sc">4</td><td class="sc b-high">12</td><td>Agent runtime is immutable and rebuilt from a controlled image each session; no state survives by default. Prompt and tool definitions held in version control outside the agent's write path. File integrity monitoring on configuration and scheduling locations. Software installation on lab hosts restricted.</td><td class="iso">8.9, 8.19, 8.32, 8.16, 8.4</td><td class="sc b-mod">6</td></tr>
+
+<tr><td class="id">AGT-06</td><td>Unbounded agent loop consumes compute, power and external API spend without producing useful output.</td><td class="sc">4</td><td class="sc">2</td><td class="sc b-mod">8</td><td>Hard limits on iteration count, wall-clock duration, token spend and tool invocations per session. Automatic termination at threshold. Spend alerting on any metered external service.</td><td class="iso">8.6, 8.16, 5.30</td><td class="sc b-low">4</td></tr>
+
+<tr><td class="id">AGT-07</td><td>Confused deputy. The agent exercises its own privileges on behalf of a request that originated from an untrusted source, so authority is laundered through the agent.</td><td class="sc">3</td><td class="sc">4</td><td class="sc b-high">12</td><td>Requester identity propagated to the authorisation decision rather than the agent acting under a single service identity. Distinct, lower-privilege agent profiles for sessions that touch untrusted content. Authorisation evaluated at the tool boundary, not the prompt boundary.</td><td class="iso">8.2, 8.3, 8.27, 5.15, 5.16</td><td class="sc b-mod">8</td></tr>
+
+<tr><td class="id">AGT-08</td><td>Multi-agent or long-running autonomous configuration behaves outside its expected envelope and no reliable stop mechanism exists.</td><td class="sc">2</td><td class="sc">4</td><td class="sc b-mod">8</td><td>A tested kill switch exists at three layers: process termination, network isolation of the segment, and physical power isolation. Termination procedure documented and exercised. Autonomous runs are attended or bounded by an automatic expiry.</td><td class="iso">5.29, 5.30, 8.16, 8.27, 5.37</td><td class="sc b-low">4</td></tr>
+</table></div>
+
+<!-- ============ PHASE 8 ============ -->
+<h2 id="mon"><span class="n">12</span>Phase 8 &mdash; Monitoring and incident response</h2>
+<div class="scroller"><table>
+<tr><th style="width:74px">ID</th><th style="width:26%">Risk scenario</th><th style="width:44px">L</th><th style="width:44px">I</th><th style="width:52px">Inh</th><th>Countermeasures and control statements</th><th style="width:16%">ISO 27002:2022</th><th style="width:52px">Res</th></tr>
+
+<tr><td class="id">MON-01</td><td>No logging of prompts, responses, tool calls or model load events. An incident cannot be reconstructed, and the operator cannot demonstrate what the lab did or did not do.</td><td class="sc">4</td><td class="sc">4</td><td class="sc b-crit">16</td><td>Structured logging of session identity, model and adapter digests, prompts, responses, tool invocations with arguments and results, and artefact load events. Logs shipped off-host in near real time to a store the lab identity cannot write to. Clock synchronisation enforced across lab hosts.</td><td class="iso">8.15, 8.16, 8.17, 5.28</td><td class="sc b-mod">6</td></tr>
+
+<tr><td class="id">MON-02</td><td>The logs become the largest single concentration of sensitive material in the environment, and are protected less well than the systems they describe.</td><td class="sc">4</td><td class="sc">4</td><td class="sc b-crit">16</td><td>Prompt and response logs classified at the highest classification of any data the lab handles. Encrypted at rest, access restricted to named identities, retention bounded and enforced. Secret and personal data redaction applied at ingestion where feasible.</td><td class="iso">8.15, 8.24, 8.11, 8.10, 5.33, 5.12</td><td class="sc b-mod">8</td></tr>
+
+<tr><td class="id">MON-03</td><td>No detection content specific to lab behaviour. Generic endpoint alerting does not distinguish legitimate research from compromise or agent misbehaviour.</td><td class="sc">4</td><td class="sc">3</td><td class="sc b-high">12</td><td>Detection use cases developed for lab-specific signals: unexpected model artefact writes, egress to non-allowlisted destinations, tool invocation outside baseline sequences, GPU utilisation anomalies, new listening services, credential access from agent contexts. Use cases tested against simulated conditions, not assumed.</td><td class="iso">8.16, 5.7, 8.29</td><td class="sc b-mod">6</td></tr>
+
+<tr><td class="id">MON-04</td><td>No incident response plan covering lab-specific events, including who is notified and within what deadline when client data or third parties are involved.</td><td class="sc">3</td><td class="sc">4</td><td class="sc b-high">12</td><td>Lab-specific scenarios added to the incident response plan: model artefact compromise, agent egress event, inadvertent unlawful content generation, client data exposure. Notification obligations mapped per scenario, including regulatory and contractual deadlines. Evidence preservation procedure defined. Plan exercised at least annually.</td><td class="iso">5.24&ndash;5.28, 5.31, 5.34, 5.29</td><td class="sc b-mod">6</td></tr>
+
+<tr><td class="id">MON-05</td><td>Log integrity failure. An attacker, or the agent itself, clears or alters lab logs and removes the evidence of its own activity.</td><td class="sc">3</td><td class="sc">3</td><td class="sc b-mod">9</td><td>Append-only remote log store. Lab hosts hold write-only credentials to the collector and no deletion capability. Integrity verification on the archive. Alerting on log source silence.</td><td class="iso">8.15, 8.24, 8.22, 5.33, 8.16</td><td class="sc b-low">4</td></tr>
+</table></div>
+
+<!-- ============ PHASE 9 ============ -->
+<h2 id="hum"><span class="n">13</span>Phase 9 &mdash; Human factors</h2>
+<div class="scroller"><table>
+<tr><th style="width:74px">ID</th><th style="width:26%">Risk scenario</th><th style="width:44px">L</th><th style="width:44px">I</th><th style="width:52px">Inh</th><th>Countermeasures and control statements</th><th style="width:16%">ISO 27002:2022</th><th style="width:52px">Res</th></tr>
+
+<tr><td class="id">HUM-01</td><td>Automation bias. Fluent, confident output from an unaligned model is trusted because it reads as authoritative, and anthropomorphic framing of the system encourages the operator to attribute reasoning and intent where there is none.</td><td class="sc">4</td><td class="sc">4</td><td class="sc b-crit">16</td><td>Awareness training covering the limits of generative output, the distinction between fluency and accuracy, and the specific hazard of anthropomorphic language in technical judgement. Verification gate on all technical assertions. Documented procedure requiring the operator to record the primary source for any model-originated claim used in analysis.</td><td class="iso">6.3, 5.37, 5.35, 5.36</td><td class="sc b-mod">8</td></tr>
+
+<tr><td class="id">HUM-02</td><td>Unauthorised physical or logical access by household members, guests, cleaners or contractors to a lab holding client material and unfiltered models.</td><td class="sc">3</td><td class="sc">3</td><td class="sc b-mod">9</td><td>Lab area secured when unattended. Sessions locked on idle. Named accounts with strong authentication; no shared or unauthenticated local access. Clear desk and clear screen applied to lab equipment. Visitor access to the area recorded.</td><td class="iso">7.1&ndash;7.4, 7.7, 8.1, 8.5, 5.15</td><td class="sc b-low">4</td></tr>
+
+<tr><td class="id">HUM-03</td><td>Operator exposure to distressing generated content with no welfare provision, in an environment specifically configured not to refuse.</td><td class="sc">3</td><td class="sc">3</td><td class="sc b-mod">9</td><td>Welfare provision documented as part of the authorisation standard, including exposure limits, a route to support, and an explicit position that operators may stop any line of research without justification. Prohibited content categories stated so the boundary is known in advance rather than discovered.</td><td class="iso">6.3, 6.8, 5.10, 6.2</td><td class="sc b-mod">6</td></tr>
+
+<tr><td class="id">HUM-04</td><td>Key person dependency. The environment is undocumented and only one person can operate, secure or safely shut it down.</td><td class="sc">4</td><td class="sc">3</td><td class="sc b-high">12</td><td>Documented operating procedures covering build, operation, emergency shutdown and decommissioning, held outside the lab and readable by a competent third party. Named deputy with documented access to isolation and power controls. Configuration held in version control.</td><td class="iso">5.2, 5.37, 5.29, 8.13, 8.9</td><td class="sc b-mod">6</td></tr>
+
+<tr><td class="id">HUM-05</td><td>Research findings published without ethical review, responsible disclosure consideration or assessment of whether the publication itself provides uplift.</td><td class="sc">3</td><td class="sc">4</td><td class="sc b-high">12</td><td>Publication gate requiring assessment of uplift, disclosure obligations to affected parties, licence and copyright position, and client confidentiality. Peer review before release. Documented decision record retained for each publication.</td><td class="iso">5.35, 5.14, 5.31, 5.32, 6.2, 5.5</td><td class="sc b-mod">6</td></tr>
+</table></div>
+
+<!-- ============ PHASE 10 ============ -->
+<h2 id="eol"><span class="n">14</span>Phase 10 &mdash; Egress, publication and disposal</h2>
+<div class="scroller"><table>
+<tr><th style="width:74px">ID</th><th style="width:26%">Risk scenario</th><th style="width:44px">L</th><th style="width:44px">I</th><th style="width:52px">Inh</th><th>Countermeasures and control statements</th><th style="width:16%">ISO 27002:2022</th><th style="width:52px">Res</th></tr>
+
+<tr><td class="id">EOL-01</td><td>An alignment-modified artefact, a harmful output sample or a working exploitation capability is shared publicly with no gating, because sharing is the cultural default in the research community.</td><td class="sc">3</td><td class="sc">5</td><td class="sc b-sev">15</td><td>Information transfer control applies to model artefacts as information assets. Alignment-modified weights are non-transferable by classification. Publication gate covers uplift assessment, licence position and disclosure obligations. Repository and model hub destinations blocked from lab egress by default.</td><td class="iso">5.14, 5.10, 5.12, 8.12, 8.23, 5.35</td><td class="sc b-high">10</td></tr>
+
+<tr><td class="id">EOL-02</td><td>Decommissioned accelerators, drives or hosts are sold or returned under warranty with residual model artefacts, logs and client data recoverable.</td><td class="sc">3</td><td class="sc">4</td><td class="sc b-high">12</td><td>Secure disposal procedure covering cryptographic erasure, verified media sanitisation and certificate of destruction. Full disk encryption from build so key destruction is the primary mechanism. Disposal recorded against the asset register entry before the asset leaves the premises.</td><td class="iso">7.10, 7.14, 8.10, 8.24, 5.9</td><td class="sc b-low">4</td></tr>
+
+<tr><td class="id">EOL-03</td><td>Backup, snapshot and image sprawl retains data long past its retention decision, defeating deletion at the primary store.</td><td class="sc">4</td><td class="sc">3</td><td class="sc b-high">12</td><td>Retention applied to backups and snapshots equally, with automated expiry. Deletion requests traced through every copy including offline media. Backup inventory reconciled against the asset register quarterly.</td><td class="iso">8.13, 8.10, 5.33, 5.9</td><td class="sc b-mod">6</td></tr>
+
+<tr><td class="id">EOL-04</td><td>The lab is abandoned rather than decommissioned: left powered, reachable and unpatched after the research it was built for has finished.</td><td class="sc">3</td><td class="sc">4</td><td class="sc b-high">12</td><td>Every lab instance carries a defined end date at authorisation. Decommissioning procedure covers data destruction, network removal, credential revocation and register closure. Quarterly reconciliation of running assets against active authorisations, with unauthorised survivors powered down.</td><td class="iso">5.9, 5.37, 8.9, 8.16, 8.8</td><td class="sc b-low">4</td></tr>
+</table></div>
+
+<!-- ============ CONTROLS ============ -->
+<h2 id="controls"><span class="n">15</span>Consolidated control statements</h2>
+<p>Statement of Applicability extract. These are the controls whose implementation is materially altered by the presence of an unguardrailed LLM laboratory, expressed as auditable statements.</p>
+
+<div class="scroller"><table>
+<tr><th style="width:11%">Ref</th><th style="width:20%">Control</th><th>Laboratory-specific implementation statement</th></tr>
+
+<tr><td class="id">A.5.1</td><td>Policies for information security</td><td>A Laboratory Authorisation and Acceptable Use standard is approved and maintained. It states permitted and prohibited research categories, the accepted position on alignment-stripped models, the compensating controls relied upon, and the conditions under which the acceptance lapses.</td></tr>
+
+<tr><td class="id">A.5.9 / A.5.12</td><td>Asset inventory and classification</td><td>Model weights, adapters, prompts, tool manifests, corpora and vector stores are registered as information assets with source, digest, licence and classification. Alignment-modified artefacts and prompt logs are classified at the highest internal level. Vector stores inherit the classification of their source corpus.</td></tr>
+
+<tr><td class="id">A.5.14</td><td>Information transfer</td><td>Model artefacts are subject to transfer control as information assets. Alignment-modified weights are marked non-transferable. Any external transfer requires documented approval, an uplift assessment and a licence check.</td></tr>
+
+<tr><td class="id">A.5.17</td><td>Authentication information</td><td>No credential is supplied to a model or agent through the conversation channel. Agent credentials are short-lived, task-scoped and issued from a secrets manager. Detection of a credential in prompt or log content triggers rotation as the primary remediation.</td></tr>
+
+<tr><td class="id">A.5.31 / A.5.32</td><td>Legal, regulatory and intellectual property</td><td>Legal obligations applicable to the lab are identified and maintained, covering computer misuse, data protection, unlawful content offences, export control and model licensing. Prohibited content categories are stated absolutely, with no research exemption asserted.</td></tr>
+
+<tr><td class="id">A.5.34</td><td>Privacy and PII protection</td><td>A data protection impact assessment covers the lab as a processing environment. Personal data ingestion requires a documented lawful basis, minimisation and a destruction point. Special category data is prohibited absent a specific assessed exception.</td></tr>
+
+<tr><td class="id">A.6.3</td><td>Awareness and training</td><td>Operators are trained on prompt injection, insecure output handling, automation bias, anthropomorphisation risk, the strict-liability position on certain generated content, and the incident procedure for inadvertent generation.</td></tr>
+
+<tr><td class="id">A.7.5 / A.7.11</td><td>Physical and environmental threats, utilities</td><td>Thermal and electrical loading of the accelerator estate is calculated and measured under sustained full load. Active cooling is verified for server-class passive cards. Interlinked smoke detection covers the equipment location. Automated thermal shutdown thresholds are configured for unattended runs.</td></tr>
+
+<tr><td class="id">A.8.2 / A.8.18</td><td>Privileged access and utility programs</td><td>Agents execute as unprivileged identities. Tools expose narrow operations rather than general-purpose shells. Privileged utilities and offensive tooling are absent from agent images. State-changing and outbound actions require human approval.</td></tr>
+
+<tr><td class="id">A.8.10</td><td>Information deletion</td><td>Retention is defined and enforced for conversation history, caches, embeddings, temporary artefacts and logs. Deletion is verified rather than assumed, and traced through backups and snapshots.</td></tr>
+
+<tr><td class="id">A.8.15 / A.8.16</td><td>Logging and monitoring</td><td>Session identity, model digest, prompts, responses, tool calls and artefact loads are logged and shipped to an append-only store the lab cannot write to. Detection content exists for lab-specific signals and is tested rather than assumed effective.</td></tr>
+
+<tr><td class="id">A.8.20 / A.8.22 / A.8.23</td><td>Network security, segregation and filtering</td><td>The lab occupies a dedicated segment with default-deny in both directions and no default route for agent workloads. External destinations are allowlisted with justification and expiry. DNS is forced through a logged resolver. Management access is initiated only from the trusted side.</td></tr>
+
+<tr><td class="id">A.8.26 / A.8.27</td><td>Application security and secure architecture</td><td>Instruction and data channels are architecturally separated. Retrieved content is delimited and carries no authority. Authorisation decisions occur at the tool boundary, not the prompt boundary. Untrusted-content sessions run under a reduced-privilege agent profile.</td></tr>
+
+<tr><td class="id">A.8.28</td><td>Secure coding</td><td>Model output is treated as untrusted input by every downstream consumer, with validation, contextual encoding and parameterised queries applied. Automatic execution of generated code occurs only in an ephemeral, network-isolated sandbox.</td></tr>
+
+<tr><td class="id">A.8.29 / A.8.33</td><td>Security testing and test information</td><td>Models are evaluated locally for capability and refusal boundary before promotion. Adaptation is gated on a regression threshold against a held-out set. Sanitised or synthetic data is used in place of live client data wherever the research question permits.</td></tr>
+
+<tr><td class="id">A.8.31</td><td>Separation of environments</td><td>Artefact evaluation, corpus parsing, inference and agent execution occur in separate isolated contexts. One retrieval namespace per engagement, destroyed at close with evidence retained.</td></tr>
+
+<tr><td class="id">A.5.29 / A.5.30</td><td>Continuity and readiness</td><td>A tested kill switch exists at process, network and physical power layers. The termination procedure is documented and exercised. Autonomous runs are attended or bounded by automatic expiry.</td></tr>
+</table></div>
+
+<!-- ============ RESIDUAL ============ -->
+<h2 id="residual"><span class="n">16</span>Residual risk view</h2>
+
+<h3>Distribution shift</h3>
+<div class="scroller"><table style="max-width:640px">
+<tr><th>Band</th><th>Inherent</th><th>Residual</th><th>Movement</th></tr>
+<tr><td class="b-crit">Critical (20&ndash;25)</td><td class="sc">11</td><td class="sc">0</td><td class="sc b-low">&minus;11</td></tr>
+<tr><td class="b-sev">Severe (15&ndash;19)</td><td class="sc">8</td><td class="sc">0</td><td class="sc b-low">&minus;8</td></tr>
+<tr><td class="b-high">High (10&ndash;14)</td><td class="sc">21</td><td class="sc">9</td><td class="sc b-low">&minus;12</td></tr>
+<tr><td class="b-mod">Moderate (5&ndash;9)</td><td class="sc">11</td><td class="sc">28</td><td class="b-mod sc">+17</td></tr>
+<tr><td class="b-low">Low (1&ndash;4)</td><td class="sc">0</td><td class="sc">14</td><td class="b-low sc">+14</td></tr>
+<tr><td><strong>Total</strong></td><td class="sc"><strong>51</strong></td><td class="sc"><strong>51</strong></td><td></td></tr>
+</table></div>
+
+<h3>Residual High-band risks requiring active management</h3>
+<div class="scroller"><table>
+<tr><th style="width:80px">ID</th><th style="width:36%">Residual exposure</th><th style="width:56px">Res</th><th>Why it does not reduce further</th></tr>
+<tr><td class="id">RUN-02</td><td>Indirect prompt injection</td><td class="sc b-high">12</td><td>No general defence exists. Instruction and data share one channel by architecture. Controls constrain blast radius, not occurrence.</td></tr>
+<tr><td class="id">AGT-01</td><td>Excessive agency</td><td class="sc b-high">12</td><td>Tool access is the research objective. Reducing it further removes the capability being studied. Approval gates depend on human vigilance, which degrades with volume.</td></tr>
+<tr><td class="id">RUN-01</td><td>Direct prompt manipulation</td><td class="sc b-high">12</td><td>Accepted by design. Refusal behaviour is deliberately absent; the residual is the cost of the research premise.</td></tr>
+<tr><td class="id">SUP-02</td><td>Trigger-conditioned model backdoor</td><td class="sc b-high">12</td><td>Not detectable by static or behavioural evaluation with current methods. Managed purely by containment.</td></tr>
+<tr><td class="id">DAT-01</td><td>Client data ingestion</td><td class="sc b-high">10</td><td>Depends on operator discipline at the moment of convenience. Technical prevention is partial where the operator holds legitimate access to both environments.</td></tr>
+<tr><td class="id">ADP-01</td><td>Alignment-stripped artefact leakage</td><td class="sc b-high">10</td><td>Impact remains severe under any likelihood reduction. Controls reduce probability but cannot reduce consequence.</td></tr>
+<tr><td class="id">AGT-02</td><td>Unauthorised outbound activity</td><td class="sc b-high">10</td><td>Criminal exposure keeps impact at maximum. Egress controls are strong but a single misconfiguration is sufficient.</td></tr>
+<tr><td class="id">AGT-03</td><td>Agent exfiltration via permitted channels</td><td class="sc b-high">10</td><td>Any permitted egress path is a potential covert channel. Complete closure would prevent legitimate research.</td></tr>
+<tr><td class="id">RUN-05</td><td>Unlawful content generation</td><td class="sc b-high">10</td><td>Strict liability means impact cannot be mitigated, only likelihood. Prohibition plus capability removal is the entire control set.</td></tr>
+<tr><td class="id">DAT-05</td><td>Corpus poisoning</td><td class="sc b-high">10</td><td>Detection of semantic poisoning in large corpora is not reliable. Segregation limits contamination rather than preventing it.</td></tr>
+<tr><td class="id">EOL-01</td><td>Publication of harmful artefacts</td><td class="sc b-high">10</td><td>Governed by human judgement at the publication gate. Technical egress blocking is bypassable by an authorised operator.</td></tr>
+</table></div>
+
+<h2 id="irreducible"><span class="n">17</span>Irreducible risk and formal acceptance</h2>
+<div class="panel red">
+<p><strong>Three residual risks cannot be engineered away and must be accepted explicitly or the lab should not operate.</strong></p>
+<ul>
+<li><strong>Indirect prompt injection (RUN-02).</strong> There is no reliable technical fix. The only real control is that the model has nothing worth compromising and nowhere to send it. This is why AGT-01, AGT-02 and AGT-03 controls are non-negotiable rather than best-effort: they are what makes RUN-02 survivable.</li>
+<li><strong>Model behavioural opacity (SUP-02).</strong> Weights cannot be audited in any meaningful sense. Every model must be treated as potentially adversarial for the full duration of its use, irrespective of publisher reputation or evaluation results.</li>
+<li><strong>Strict-liability content generation (RUN-05).</strong> Likelihood is low and controllable; impact is not reducible by any technical means. Managed by hard prohibition, capability removal, and a rehearsed procedure for inadvertent occurrence.</li>
+</ul>
+<p>These acceptances should be signed, dated and given an expiry no longer than twelve months. An acceptance without an expiry is not a risk decision, it is an omission with a signature on it.</p>
+</div>
+
+<h2 id="legal"><span class="n">18</span>Legal and regulatory annex</h2>
+<div class="scroller"><table>
+<tr><th style="width:26%">Instrument</th><th style="width:30%">Relevance to the lab</th><th>Practical consequence</th></tr>
+<tr><td>Computer Misuse Act 1990</td><td>AGT-02. Unauthorised access to a computer is the offence; an agent acting autonomously does not remove the operator's exposure.</td><td>Default-deny egress is a legal control, not merely a technical one. Authorisation for any external testing must be in writing and held before the fact.</td></tr>
+<tr><td>UK GDPR and Data Protection Act 2018</td><td>DAT-01, DAT-02, DAT-06, MON-02. Model training and retrieval over personal data is high-risk processing.</td><td>Impact assessment required. Records of processing must include the lab. Deletion must be demonstrable across caches, embeddings and logs.</td></tr>
+<tr><td>Protection of Children Act 1978 and related offences</td><td>RUN-05. Generation and possession offences are strict liability; multimodal capability plus automatic caching creates exposure without intent.</td><td>Disable multimodal generation absent specific need. Disable caching for any session with that capability. Rehearse the response procedure.</td></tr>
+<tr><td>Terrorism Act 2000 and 2006</td><td>RUN-05, EOL-01. Collection and dissemination offences apply to generated as well as collected material.</td><td>Prohibited categories stated absolutely in the acceptable use standard. Publication gate assesses dissemination risk.</td></tr>
+<tr><td>Model licences and acceptable use policies</td><td>SUP-05, ADP-01. Many open-weight licences prohibit alignment removal, certain use categories, or commercial derivative use.</td><td>Licence recorded at registration; commercial workflows technically separated from restricted artefacts.</td></tr>
+<tr><td>Export control and sanctions</td><td>SUP-07, EOL-01. Weights and certain tooling may be controlled on transfer or by counterparty.</td><td>Provenance check at acquisition; export assessment before any onward transfer.</td></tr>
+<tr><td>Client contracts and NDAs</td><td>GOV-03, DAT-01, DAT-03. Many engagement terms prohibit processing of client data by AI systems or require prior consent.</td><td>Contractual position mapped per client. Where prohibited, enforce technically rather than by intention.</td></tr>
+<tr><td>Connectivity terms of service</td><td>AGT-02, INF-05. Domestic and business connectivity terms typically prohibit scanning and hosting.</td><td>Egress allowlist. No inbound exposure of lab services.</td></tr>
+</table></div>
+
+<h2 id="gaps"><span class="n">19</span>Where ISO 27001 runs out</h2>
+<p>ISO/IEC 27001:2022 Annex A contains no AI-specific control. Every mapping in this document reuses a general control in an AI context, which works well for containment, access, logging and supply chain, and works poorly for the risks that are genuinely novel. Four areas have no clean Annex A home:</p>
+<ul>
+<li><strong>Model behavioural assurance.</strong> A.8.29 covers security testing, but there is no control for evaluating a statistical artefact whose failure modes are not enumerable in advance.</li>
+<li><strong>Instruction and data channel separation.</strong> The closest fit is A.8.27, secure architecture principles, which predates the problem and offers no guidance on it.</li>
+<li><strong>Output veracity.</strong> Annex A treats integrity as protection against unauthorised modification. It has nothing to say about a system that produces confidently wrong output through correct operation.</li>
+<li><strong>Autonomy limits and human oversight.</strong> No Annex A control addresses bounding what a system may do on its own initiative.</li>
+</ul>
+<div class="panel grn">
+<p><strong>Recommended supplementary alignment.</strong> Use ISO/IEC 27001 as the containment and assurance backbone, then layer AI-specific management on top rather than stretching Annex A to cover it.</p>
+<span class="chip g">ISO/IEC 42001</span> AI management system: impact assessment, oversight, lifecycle governance.
+<br><span class="chip g">ISO/IEC 23894</span> AI risk management guidance, maps cleanly onto this register's structure.
+<br><span class="chip a">NIST AI RMF</span> Govern, Map, Measure, Manage functions for the assurance gap.
+<br><span class="chip a">OWASP Top 10 for LLM Applications</span> Direct technical mapping for RUN-02, RUN-03, RUN-07, AGT-01.
+<br><span class="chip">MITRE ATLAS</span> Adversarial technique taxonomy for detection content development under MON-03.
+<br><span class="chip">NCSC secure AI system development guidance</span> Secure design, development, deployment and operation principles.
+</div>
+
+<h3>Assurance and review</h3>
+<ul>
+<li>Quarterly review of the register, or on material change to the model set, tool set, network policy or data classification handled.</li>
+<li>Annual independent review of the lab configuration against this model (GOV-05).</li>
+<li>Annual exercise of the incident response plan and the kill switch (MON-04, AGT-08).</li>
+<li>Quarterly reconciliation of running assets against active authorisations (EOL-04).</li>
+<li>Risk acceptances re-signed at expiry, never rolled forward silently (GOV-04).</li>
+</ul>
+
+<footer>
+Risk model produced for internal laboratory governance. Control mappings reference ISO/IEC 27001:2022 Annex A and ISO/IEC 27002:2022 control numbering. Scoring is qualitative and reflects the assumed architecture in section 01; re-score against the actual environment before use. This document is not legal advice; the legal annex identifies areas requiring qualified advice rather than resolving them.
+</footer>
+
+</div>
+</body>
+</html>
